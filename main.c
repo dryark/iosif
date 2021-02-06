@@ -4,7 +4,7 @@
 #include<stdio.h>
 #include<stdarg.h>
 #include<CoreFoundation/CoreFoundation.h>
-#include"errors.h"
+#include"mobdev_err.h"
 #include"cfutil.c"
 #include"uclop.h"
 #include"mobiledevice.h"
@@ -13,8 +13,8 @@
 
 void exitOnError( int rc, const char *src ) {
   if( !rc ) return;
-  const char *error_message = get_error_message(rc);                           \
-  fprintf( stderr, "%s: %s\n", src, error_message );
+  mobdev_err *info = mobdev_geterr( rc );
+  fprintf( stderr, "Error on %s: %s - %s\n", src, info->name, info->error );
 }
 
 void devUp( void *device ) {
