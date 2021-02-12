@@ -5,8 +5,11 @@ void runInfo( void *device );
 void run_info( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runInfo ); }
 
 void runInfo( void *device ) {
+  char useJson = ucmd__get( g_cmd, "-json" ) ? 1 : 0;
+  
   devUp( device );
   
+  if( useJson ) printf("{\n");
   for( int i=0;i<g_cmd->argc;i++ ) {
       char *name = strdup(g_cmd->argv[i]);
       char *dom = NULL;
@@ -22,9 +25,20 @@ void runInfo( void *device ) {
       }
       //printf("Dom=%s Name=%s\n", dom, name2 );
       CFTypeRef val = AMDeviceCopyValue( device, dom ? str_c2cf( dom ) : NULL, (name2[0]==0)?NULL:str_c2cf(name2) );
+      if( val ) {
+        if( useJson ) {
+          printf("%s:",name);
+          cf2json( val );
+          printf(",\n");
+        }
+        else {
+          if( g_cmd->argc>1) printf("%s:",name);
+          cfdump( 0, val );
+        }
+      }
       free( name );
-      cfdump( 0, val );
   }
+  if( useJson ) printf("}\n");
   
   devDown( device );
   

@@ -48,6 +48,13 @@ CFDictionaryRef runMgRaw( void *device, CFArrayRef keys ) {
 }
 
 void runMg( void *device ) {
+  CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
+  char *udid = str_cf2c( udidCf );
+  char *goalUdid = ucmd__get( g_cmd, "-id" );
+  if( goalUdid && strcmp( udid, goalUdid ) ) return;
+  
+  char useJson = ucmd__get( g_cmd, "-json" ) ? 1 : 0;
+  
   int count = g_cmd->argc;
   
   char *defaultNames[] = { "UniqueDeviceID","main-screen-width","main-screen-height" };
@@ -62,8 +69,7 @@ void runMg( void *device ) {
   
   CFDictionaryRef mg = runMgRaw( device, names ); 
   
-  char json = ucmd__get( g_cmd, "-json" ) ? 1 : 0;
-  if( json ) printf("{\n");
+  if( useJson ) printf("{\n");
   for( int i=0;i<count;i++ ) {
     char *name = namesC[i];
     CFTypeRef val = CFDictionaryGetValue( mg, str_c2cf( name ) );
@@ -71,7 +77,7 @@ void runMg( void *device ) {
       printf("\"%s\":NOT FOUND\n",name);
       continue;
     }
-    if( json ) {
+    if( useJson ) {
       printf("\"%s\":",name);
       cf2json( val );
       if( i != ( count - 1 ) ) printf(",\n");
@@ -82,7 +88,7 @@ void runMg( void *device ) {
       cfdump( 0, val );
     }
   }
-  if( json ) printf("}\n");
+  if( useJson ) printf("}\n");
     
   exit(0);
 }

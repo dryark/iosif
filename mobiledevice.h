@@ -16,6 +16,8 @@ extern CFStringRef AMDeviceCopyDeviceIdentifier( void * );
 extern int AMDServiceConnectionReceiveMessage( void *service, CFPropertyListRef message, CFPropertyListFormat *format );
 extern int AMDServiceConnectionSendMessage( void *service, CFPropertyListRef message, CFPropertyListFormat format);
 extern int AMDServiceConnectionSend( void *service, const void *message, size_t length);
+extern int AMDServiceConnectionGetSocket( void *service );
+extern int AMDServiceConnectionInvalidate( void *service );
 extern CFTypeRef AMDeviceCopyValue( void *device, CFStringRef domain, CFStringRef cfstring );
 //extern int AMDServiceConnectionReceive( void *service, void *buffer, size_t size);
 

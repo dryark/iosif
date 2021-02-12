@@ -5,6 +5,7 @@
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<netdb.h>
+#include<stdlib.h>
 
 void runTunnel( void *device );
 void run_tunnel( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runTunnel ); }
@@ -114,23 +115,51 @@ void handleClient( void *device, tunnel *tun, int clientSock, struct sockaddr_st
 }
 
 void runTunnel( void *device ) {
+  CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
+  char *udid = str_cf2c( udidCf );
+  char *goalUdid = ucmd__get( g_cmd, "-id" );
+  if( goalUdid && strcmp( udid, goalUdid ) ) return;
+  
   devUp( device );
-    
-  int srcPort = 8300;
-  int destPort = 8100;
-  if( g_cmd->argc ) {
-  }  
   
-  int tunCount = 1;
+  if( !g_cmd->argc ) {
+      fprintf(stderr,"Must specify at least one [fromPort]:[toPort] pair\n");
+      devDown( device );
+      exit(1);
+  }
+  
+  int tunCount = g_cmd->argc;
+  int okCount = 0;
   tunnel *tuns[10];
-  tuns[0] = tunnel__new( device, srcPort, destPort );
   
+  for( int i=0;i<tunCount;i++ ) {
+      char *pair = g_cmd->argv[ i ];
+      int j=0;
+      char found = 0;
+      for( ;j<strlen( pair );j++ ) {
+          if( pair[j] == ':' ) {
+              found = 1;
+              break;
+          }
+      }
+      if( !found ) {
+          fprintf(stderr,"Pair \"%s\" does not contain :\n", pair );
+          continue;
+      }
+      pair[j] = 0x00;
+      int from = atoi( pair );
+      int to = atoi( &pair[j+1] );
+      printf("Tunnel from %i to %i\n", from, to );
+      tuns[okCount] = tunnel__new( device, from, to );
+      okCount++;
+  }
+    
   fd_set set;
       
   while( 1 ) {
     FD_ZERO( &set );
     int maxFd = 0;
-    for( int i=0;i<tunCount;i++ ) {
+    for( int i=0;i<okCount;i++ ) {
       tunnel *tun = tuns[i];
       int inSock = tun->inSock;
       FD_SET( inSock, &set );
@@ -139,7 +168,7 @@ void runTunnel( void *device ) {
     
     select( maxFd + 1, &set, NULL, NULL, NULL );
     
-    for( int i=0;i<tunCount;i++ ) {
+    for( int i=0;i<okCount;i++ ) {
       tunnel *tun = tuns[i];
       int inSock = tun->inSock;
       

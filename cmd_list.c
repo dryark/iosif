@@ -8,6 +8,30 @@ void run_list( ucmd *cmd ) {
   waitForConnect( runList );
 }
 
+void detectConnect( void *device );
+void detectDisconnect( void *device );
+void run_detect( ucmd *cmd ) {
+  g_cmd = cmd;
+  waitForConnectDisconnect( detectConnect, detectDisconnect );
+}
+
+void detectConnect( void *device ) {
+  devUp( device );
+  CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
+  char *udid = str_cf2c( udidCf );
+  CFTypeRef nameCf = AMDeviceCopyValue( device, NULL, CFSTR("DeviceName") );
+  char *name = str_cf2c( nameCf );
+  devDown( device );
+  for( int i=0;i<strlen(name);i++ ) if( name[i]=='\"' ) name[i]='`';
+  fprintf(stderr,"{type:\"connect\",udid:\"%s\",name:\"%s\"}\n",udid,name);
+}
+
+void detectDisconnect( void *device ) {
+  CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
+  char *udid = str_cf2c( udidCf );
+  fprintf(stderr,"{type:\"disconnect\",udid:\"%s\"}\n",udid);
+}
+
 void runList( void *device ) {
   char g_json = ucmd__get( g_cmd, "-json" ) ? 1 : 0;
   
