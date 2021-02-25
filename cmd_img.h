@@ -1,0 +1,1 @@
+void run_img( ucmd *cmd );

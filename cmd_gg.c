@@ -1,6 +1,15 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<CoreFoundation/CoreFoundation.h>
+#include<stdlib.h>
+#include"uclop.h"
+#include"cfutil.h"
+#include"mobiledevice.h"
+#include"service.h"
+#include"services.h"
+
+static ucmd *g_cmd = NULL;
 void runGG( void *device );
 void run_gg( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runGG ); }
 

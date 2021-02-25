@@ -1,9 +1,10 @@
 all: iosif
 
 iosif_sources := $(wildcard *.c) $(wildcard *.h) nsutil.m
+c_files := $(wildcard *.c)
 
 iosif: $(iosif_sources)
-	gcc main.c cfutil.c nsutil.m bytearr.c -o iosif -F ./ -lobjc -framework Foundation -framework CoreFoundation -framework MobileDevice
-
+	gcc -o iosif $(c_files) nsutil.m -F ./ -lobjc -framework Foundation -framework CoreFoundation -framework MobileDevice
+       
 clean:
 	$(RM) iosif

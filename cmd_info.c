@@ -1,10 +1,20 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include"cfutil.h"
+#include"uclop.h"
+#include"service.h"
+
+static ucmd *g_cmd = NULL;
 void runInfo( void *device );
 void run_info( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runInfo ); }
 
 void runInfo( void *device ) {
+  CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
+  char *udid = str_cf2c( udidCf );
+  char *goalUdid = ucmd__get( g_cmd, "-id" );
+  if( goalUdid && strcmp( udid, goalUdid ) ) return;
+  
   char useJson = ucmd__get( g_cmd, "-json" ) ? 1 : 0;
   
   devUp( device );
@@ -28,12 +38,12 @@ void runInfo( void *device ) {
       if( val ) {
         if( useJson ) {
           printf("%s:",name);
-          cf2json( val );
+          cfdump( 1, val );
           printf(",\n");
         }
         else {
           if( g_cmd->argc>1) printf("%s:",name);
-          cfdump( 0, val );
+          cfdump( 1, val );
         }
       }
       free( name );

@@ -1,6 +1,18 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<CoreFoundation/CoreFoundation.h>
+#include<stdio.h>
+#include<string.h>
+#include"mobiledevice.h"
+#include"uclop.h"
+#include"services.h"
+#include"service.h"
+#include"cfutil.h"
+
+#define BUFSIZE 4096
+
+static ucmd *g_cmd = NULL;
 void runSysLog( void *device );
 void run_syslog( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSysLog ); }
 

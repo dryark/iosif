@@ -1,11 +1,29 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+
 #include<CoreFoundation/CoreFoundation.h>
 #include"nsutil.h"
 
 CFNumberRef i8cf(  char num    ) { return CFNumberCreate( NULL, kCFNumberCharType,   &num ); }
+CFNumberRef i16cf( int16_t num ) { return CFNumberCreate( NULL, kCFNumberSInt16Type, &num ); }
 CFNumberRef i32cf( int32_t num ) { return CFNumberCreate( NULL, kCFNumberSInt32Type, &num ); }
 CFNumberRef i64cf( int64_t num ) { return CFNumberCreate( NULL, kCFNumberSInt64Type, &num ); }
+CFBooleanRef boolcf( char val ) { return val ? kCFBooleanTrue : kCFBooleanFalse; }
+uint64_t cfi64( CFNumberRef num ) {
+  uint64_t res;
+  CFNumberGetValue( num, kCFNumberSInt64Type, &res);
+  return res;
+}
+uint16_t cfi16( CFNumberRef num ) {
+  uint64_t res;
+  CFNumberGetValue( num, kCFNumberSInt16Type, &res);
+  return res;
+}
+uint8_t cfi8( CFNumberRef num ) {
+  uint64_t res;
+  CFNumberGetValue( num, kCFNumberSInt8Type, &res);
+  return res;
+}
 
 char *str_cf2c( CFStringRef cfstr ) {
   if( !cfstr ) return NULL;
@@ -38,10 +56,16 @@ char iscfnum( CFTypeRef cf ) {
     return ( CFGetTypeID( cf ) == 0x16 ) ? 1 : 0;
 }
 
+CFTypeRef cfmapget( CFDictionaryRef node, char *key ) {
+  CFTypeRef val = CFDictionaryGetValue( node, str_c2cf( key ) );
+  return val;
+}
+
 void cfdump( int depth, CFTypeRef node ) {
   char sp[20];
   memset( sp, ' ', 20 );
   sp[depth*2] = 0x00;
+  sp[depth*2+2] = 0x00;
   CFIndex typeId = CFGetTypeID( node );
     
   int keyCnt;
@@ -49,25 +73,51 @@ void cfdump( int depth, CFTypeRef node ) {
   char *ctype;
   char *val;
   int64_t inum;
+  int32_t inum32;
   int len;
   
   switch( typeId ) {
   case 0x07: // string
     val = str_cf2c( node );
-    printf("%s\n", val );
+    printf("\"%s\"\n", val );
+    break;
+  case 0x11: // set
+    printf("[\n");
+    keyCnt = CFSetGetCount( node );
+    CFTypeRef **values = CFAllocatorAllocate( NULL, sizeof (void *) * keyCnt, 0); 
+    CFSetGetValues( node, (const void **) values );
+    for( int i=0;i<keyCnt;i++ ) {
+      printf( "%s", sp );
+      cfdump( depth+1, values[ i ] );
+    }
+    printf("%s]\n",&sp[2]);
     break;
   case 0x12: // dictionary
-    printf("\n");
+    printf("{\n");
     keyCnt = CFDictionaryGetCount( node );
     CFTypeRef *keysTypeRef = (CFTypeRef *) malloc( keyCnt * sizeof(CFTypeRef) );
     CFDictionaryGetKeysAndValues( node, (const void **) keysTypeRef, NULL);
     const void **keys = (const void **) keysTypeRef;
     for( int i=0;i<keyCnt;i++ ) {
       CFStringRef cfkey = keys[ i ];
-      char *key = str_cf2c( cfkey );
-      printf("%s%s:",sp,key);
+      CFIndex keyType = CFGetTypeID( cfkey );
+      switch( keyType ) {
+        case 0x07: {
+          char *key = str_cf2c( cfkey );
+          printf("%s%s:",sp,key);
+          break;
+        }
+        case 0x16: { // number
+          CFNumberGetValue( (CFNumberRef) cfkey, kCFNumberSInt32Type, &inum32);
+          printf("%s%d:",sp,inum32);
+          break;
+        }
+        default:
+          printf("%s?:",sp);
+      }
       cfdump( depth+1, CFDictionaryGetValue( node, cfkey ) );
     }
+    printf("%s}\n",&sp[2]);
     break;
   case 0x13: // array
     keyCnt = CFArrayGetCount( node );
@@ -76,17 +126,22 @@ void cfdump( int depth, CFTypeRef node ) {
       printf("%s",sp);
       cfdump( depth+1, CFArrayGetValueAtIndex( node, i ) );
     }
-    printf("%s]\n",sp);
+    printf("%s]\n",&sp[2]);
     break;
   case 0x14: // cfdata
     len = CFDataGetLength( node );
     CFRange range = CFRangeMake(0,len);
     char *bytes = malloc( len );
     CFDataGetBytes( node, range, (UInt8 *) bytes );
-    /*for( int i=0;i<len;i++ ) {
-      printf("%02x",bytes[i]);
-    }*/
-    fwrite( bytes, len, 1, stdout );
+    if( depth > 0 ) {
+      printf("x.");
+      for( int i=0;i<len;i++ ) {
+        printf("%02x",bytes[i]);
+      }
+      printf("\n");
+    } else {
+      fwrite( bytes, len, 1, stdout );
+    }
     free( bytes );
     break;
   case 0x15: // bool
@@ -109,67 +164,12 @@ void cfdump( int depth, CFTypeRef node ) {
     CFDictionaryRef userInfo = CFErrorCopyUserInfo( (CFErrorRef) node );
     cfdump( depth+1, userInfo );
     break;
-  default:
-    valueType = CFCopyTypeIDDescription( typeId );
-    ctype = str_cf2c( valueType );
-    printf(" %s[%lx]\n", ctype, typeId );
+  case 0x29: {// archiver UID
+    void *uid = (void*) node;
+    uint32_t *valuePtr = uid+16;
+    printf("oid.%d\n", *valuePtr );
+    break;
   }
-}
-
-void cf2json( CFTypeRef node ) {
-  CFIndex typeId = CFGetTypeID( node );
-    
-  int keyCnt;
-  CFStringRef valueType;
-  char *ctype;
-  char *val;
-  int16_t inum;
-  int len;
-  
-  switch( typeId ) {
-  case 0x07: // string
-    val = str_cf2c( node );
-    printf("\"%s\"", val );
-    break;
-  case 0x12: // dictionary
-    keyCnt = CFDictionaryGetCount( node );
-    CFTypeRef *keysTypeRef = (CFTypeRef *) malloc( keyCnt * sizeof(CFTypeRef) );
-    CFDictionaryGetKeysAndValues( node, (const void **) keysTypeRef, NULL);
-    const void **keys = (const void **) keysTypeRef;
-    printf("{\n");
-    for( int i=0;i<keyCnt;i++ ) {
-      CFStringRef cfkey = keys[ i ];
-      char *key = str_cf2c( cfkey );
-      printf("  %s:",key);
-      cf2json( CFDictionaryGetValue( node, cfkey ) );
-      printf(",\n");
-    }
-    printf("}");
-    break;
-  case 0x13: // array
-    keyCnt = CFArrayGetCount( node );
-    printf("[");
-    for( int i=0;i<keyCnt;i++ ) {
-      cf2json( CFArrayGetValueAtIndex( node, i ) );
-      if( i != ( keyCnt - 1 ) ) printf(",");
-    }
-    printf("]");
-    break;
-  case 0x14: // cfdata
-    len = CFDataGetLength( node );
-    CFRange range = CFRangeMake(0,len);
-    char *bytes = malloc( len );
-    CFDataGetBytes( node, range, (UInt8 *) bytes );
-    for( int i=0;i<len;i++ ) {
-      printf("%02x",bytes[i]);
-    }
-    free( bytes );
-    break;
-  case 0x15: // bool
-  case 0x16: // number
-    CFNumberGetValue( node, kCFNumberSInt16Type, &inum);
-    printf("%i", inum );
-    break;
   default:
     valueType = CFCopyTypeIDDescription( typeId );
     ctype = str_cf2c( valueType );
@@ -215,6 +215,19 @@ CFArrayRef genarr( int count, ... ) {
   return res;
 }
 
+CFArrayRef genstrarr( int count, ... ) {
+  va_list va;
+  va_start( va, count );
+  CFTypeRef *vals = malloc( sizeof( CFTypeRef ) * count );
+  for( int i=0;i<count;i++ ) {
+    CFStringRef strCf = str_c2cf( va_arg( va, char * ) );
+    vals[i] = strCf;
+  }
+  CFArrayRef res = CFArrayCreate( NULL, (void *) vals, count, &kCFTypeArrayCallBacks);
+  free( vals );
+  return res;
+}
+
 char *cftype( CFTypeRef cf ) {
   CFStringRef descr = CFCopyDescription(cf);
   char *type = str_cf2c( descr );
@@ -222,56 +235,75 @@ char *cftype( CFTypeRef cf ) {
   return type;
 }
 
+typedef struct {
+  uint32_t bufferSize;
+  uint32_t x1; // 4
+  uint32_t auxSize; // 8
+  uint32_t x2; // 12
+} dtxAuxHeader;
+
 CFArrayRef deserialize( const uint8_t *buf, size_t bufsize) {
   if( bufsize < 16 ) {
     fprintf(stderr, "Error: buffer of size 0x%lx is too small for a serialized array", bufsize);
     return NULL;
   }
 
-  uint64_t size = *((uint64_t *)buf+1);
+  /*uint64_t size = *((uint64_t *)buf+1);
   if ( size > bufsize ) {
     fprintf(stderr, "size of array object (%llx) is larger than total length of data (%lx)", size, bufsize);
     return NULL;
-  }
-
+  }*/
+  //dtxAuxHeader *header = (dtxAuxHeader*) buf;
+  //uint32_t size = header.bufferSize;
+  
   CFMutableArrayRef array = CFArrayCreateMutable(NULL, 0, &kCFTypeArrayCallBacks);
 
-  uint64_t off = sizeof(uint64_t) * 2;
-  uint64_t end = off + size;
+  const uint8_t *pos = buf + 16; // skip header
+  //uint64_t off = 16;//sizeof(uint64_t) * 2;
+  //uint64_t end = off + size;
+  
+  uint64_t size = *((uint64_t *)buf+1);
+  //printf("primitive size: %d, %d\n", header->bufferSize, (uint32_t) size );
+  const uint8_t *end = pos + size; // header->bufferSize;
 
-  while ( off < end ) {
+  while( pos < end ) {
     int32_t length = 0;
-    int32_t type = *( (int32_t *) (buf+off) );
-    off += 4;
+    int32_t type = *( (int32_t *) pos );
+    pos += 4;
 
     CFTypeRef ref = NULL;
 
-    switch ( type ) {
-      case 2: // object
-        length = *( (int32_t *) (buf+off) );
-        off += 4;
-        ref = archive2cf( (uint8_t *) buf+off, length );
+    //printf("Primitive type %d\n", type );
+    switch( type ) {
+      case 1: // string
+        
+      case 2: // object / bytearray
+        length = *( (int32_t *) pos );
+        pos += 4;
+        ref = archive2cf( pos, length );
         break;
 
       case 3:
-      case 5: ref = CFNumberCreate(NULL, kCFNumberSInt32Type, buf+off); length = 4; break; // i32
+      case 5: ref = CFNumberCreate(NULL, kCFNumberSInt32Type, pos); length = 4; break; // i32
 
       case 4:
-      case 6: ref = CFNumberCreate(NULL, kCFNumberSInt64Type, buf+off); length = 8; break; // i64
+      case 6: ref = CFNumberCreate(NULL, kCFNumberSInt64Type, pos); length = 8; break; // i64
 
-      case 10: continue; // dict
+      case 10: continue; //ref = kCFNull; length = 0; break; // null
 
-      default: break;
+      default:
+        printf("Unknown primitive type %d\n", type );
+        break;
     }
 
     if( !ref ) {
-      fprintf(stderr, "invalid object at offset %llx, type: %d\n", off, type);
+      fprintf(stderr, "invalid object at offset %lx, type: %d\n", pos - buf, type);
       return NULL;
     }
 
     CFArrayAppendValue( array, ref );
     CFRelease(ref);
-    off += length;
+    pos += length;
   }
 
   return (CFArrayRef) array;
@@ -361,7 +393,50 @@ char *strArchive( const char *str, int *strLen ) {
   return res;
 }*/
 
-void dumparchive( uint8_t *data, int len ) {
+CFPropertyListRef xml2plist( const char *data ) {
+  CFDataRef cfd = CFDataCreateWithBytesNoCopy( kCFAllocatorDefault, ( const uint8_t *) data, strlen(data), NULL );
+  CFErrorRef errorCode;
+  CFPropertyListRef pList = CFPropertyListCreateWithData(
+    kCFAllocatorDefault,
+    cfd,
+    kCFPropertyListImmutable,
+    NULL,
+    &errorCode
+  );
+  return pList;
+}
+
+CFPropertyListRef data2plist( const uint8_t *data, int len ) {
+  CFDataRef cfd = CFDataCreateWithBytesNoCopy( kCFAllocatorDefault, ( const uint8_t *) data, len, NULL );
+  CFErrorRef errorCode;
+  CFPropertyListRef pList = CFPropertyListCreateWithData(
+    kCFAllocatorDefault,
+    cfd,
+    kCFPropertyListImmutable,
+    NULL,
+    &errorCode
+  );
+  return pList;
+}
+
+void dumparchive( const uint8_t *data, uint32_t len ) {
+  if( data[0] != 'b' || data[1] != 'p' ) {
+    /*int i = 0;
+    for( i=0;i<len;i++ ) {
+      if( data[i] == 'b' && data[i+1] == 'p' ) break;
+    }
+    printf("Skipping %d bytes\n", i );
+    data += i; len -= i;*/
+    printf("Unknown format\n");
+    printf("Sample:\n");
+    uint32_t end = 50;
+    if( len < 50 ) end = len;
+    for( int i=0;i<end;i++ ) {
+      printf("%02x", data[i] );
+    }
+    return;
+  }
+  
   CFDataRef cfd = CFDataCreateWithBytesNoCopy( kCFAllocatorDefault, data, len, NULL );
   CFErrorRef errorCode;
   CFPropertyListRef pList = CFPropertyListCreateWithData(

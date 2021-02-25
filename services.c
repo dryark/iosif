@@ -1,5 +1,8 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+#include<CoreFoundation/CoreFoundation.h>
+#include"service.h"
+#include"cfutil.h"
 
 void *activateService( void *device, CFTypeRef serviceName, CFDictionaryRef options ) {
   devUp( device );
@@ -9,79 +12,36 @@ void *activateService( void *device, CFTypeRef serviceName, CFDictionaryRef opti
   return service;
 }
 
-void *activateSyslog(            void *device ) {
+void *activateSyslog( void *device ) {
     CFDictionaryRef unlockEscrow = genmap( 2, "UnlockEscrowBag", kCFBooleanTrue ) ;
     return activateService( device, CFSTR("com.apple.syslog_relay"), unlockEscrow );
 }
-void *activateScreenshotService( void *device ) { return activateService( device, CFSTR("com.apple.mobile.screenshotr"), NULL ); }
-void *activateDiagService(       void *device ) { return activateService( device, CFSTR("com.apple.mobile.diagnostics_relay"), NULL ); }
-
-void *activateInstrumentsService( void *device, char *issecure ) {
-  devUp( device );
-  void *service;
-  int err = AMDeviceSecureStartService( device, CFSTR("com.apple.instruments.remoteserver"), NULL, &service );
-  if( err ) {
-    exitOnError( 
-      AMDeviceSecureStartService( 
-        device, 
-        CFSTR("com.apple.instruments.remoteserver.DVTSecureSocketProxy"), 
-        NULL, 
-        &service
-      ),
-      "Start Syslog Service"
-    );
-    *issecure = 1;
-  }
-
-  devDown( device );
-  return service;
+void *activateScreenshotService( void *device ) {
+  return activateService( device, CFSTR("com.apple.mobile.screenshotr"), NULL );
+}
+void *activateDiagService( void *device ) {
+  return activateService( device, CFSTR("com.apple.mobile.diagnostics_relay"), NULL );
 }
 
-void *activateTestManagerService( void *device, char *issecure ) {
-  devUp( device );
-  void *service;
-  int err = AMDeviceSecureStartService( device, CFSTR("com.apple.testmanagerd.lockdown"), NULL, &service );
-  if( err ) {
-    exitOnError( 
-      AMDeviceSecureStartService( 
-        device, 
-        CFSTR("com.apple.testmanagerd.lockdown.secure"), 
-        NULL, 
-        &service
-      ),
-      "Start Syslog Service"
-    );
-    *issecure = 1;
-  }
-
-  devDown( device );
-  return service;
+serviceT *service__new_instruments( void *device ) {
+  serviceT *self = service__new( device,
+    "com.apple.instruments.remoteserver",
+    "com.apple.instruments.remoteserver.DVTSecureSocketProxy" );
+  service__handshake( self );
+  return self;
 }
 
-void *activateTestRemote( void *device, char *issecure ) {
-  devUp( device );
-  void *service;
-  exitOnError( AMDeviceStartService( device, CFSTR("com.apple.testmanagerd.remote-automation.lockdown.secure"), &service ), "Start Syslog Service" );
-  devDown( device );
-  return service;
-  /*devUp( device );
-  void *service;
-  //int err = AMDeviceSecureStartService( device, CFSTR("com.apple.testmanagerd.remote-automation.lockdown"), NULL, &service );
-  //if( err ) {
-    exitOnError( 
-      AMDeviceSecureStartService( 
-        device, 
-        CFSTR("com.apple.testmanagerd.remote-automation.lockdown.secure"), 
-        NULL, 
-        &service
-      ),
-      "Start Syslog Service"
-    );
-    *issecure = 1;
-  //}
+serviceT *service__new_testmanagerd( void *device ) {
+  serviceT *self = service__new( device,
+    "com.apple.testmanagerd.lockdown",
+    "com.apple.testmanagerd.lockdown.secure" );
+  service__handshake( self );
+  return self;
+}
 
-  devDown( device );
-  return service;*/
-  //CFDictionaryRef unlockEscrow = genmap( 2, "UnlockEscrowBag", kCFBooleanTrue ) ;
-  //return activateService( device, CFSTR("com.apple.testmanagerd.remote-automation.lockdown.secure"), unlockEscrow );
+serviceT *service__new_remoteautomation( void *device ) {
+  serviceT *self = service__new( device,
+    "com.apple.testmanagerd.remote-automation.lockdown",
+    "com.apple.testmanagerd.remote-automation.lockdown.secure" );
+  return self;
 }

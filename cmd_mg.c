@@ -1,6 +1,15 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<CoreFoundation/CoreFoundation.h>
+#include<stdlib.h>
+#include"cfutil.h"
+#include"uclop.h"
+#include"mobiledevice.h"
+#include"service.h"
+#include"services.h"
+
+static ucmd *g_cmd = NULL;
 void runMg( void *device );
 void run_mg( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runMg ); }
 
@@ -79,13 +88,13 @@ void runMg( void *device ) {
     }
     if( useJson ) {
       printf("\"%s\":",name);
-      cf2json( val );
+      cfdump( 1, val );
       if( i != ( count - 1 ) ) printf(",\n");
       else printf("\n");
     }
     else {
       printf("%s:",name);
-      cfdump( 0, val );
+      cfdump( 1, val );
     }
   }
   if( useJson ) printf("}\n");

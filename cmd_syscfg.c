@@ -1,6 +1,11 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<stdint.h>
+#include"service.h"
+#include"uclop.h"
+
+static ucmd *g_cmd = NULL;
 void runSysCfg( void *device );
 void run_syscfg( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSysCfg ); }
 

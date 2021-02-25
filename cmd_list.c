@@ -1,6 +1,13 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<stdio.h>
+#include"cfutil.h"
+#include"mobiledevice.h"
+#include"uclop.h"
+#include"service.h"
+
+static ucmd *g_cmd = NULL;
 void runList( void *device );
 void run_list( ucmd *cmd ) {
   g_cmd = cmd;

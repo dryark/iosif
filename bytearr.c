@@ -1,8 +1,12 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #include"bytearr.h"
 #include"nsutil.h"
 #include"cfutil.h"
+#include"archiver.h"
 
-bytechunk *bytechunk__new( uint8_t *data, int len, char alloc ) {
+bytechunk *bytechunk__new( uint8_t *data, uint32_t len, char alloc ) {
   bytechunk *self = (bytechunk *) malloc( sizeof( bytechunk ) );
   uint8_t *datacopy = (uint8_t *) malloc( len );
   memcpy( datacopy, data, len );
@@ -18,7 +22,16 @@ bytearr *bytearr__new() {
   return self;
 }
 
-void bytearr__append( bytearr *self, uint8_t *data, int len, char alloc ) {
+void ba__print( bytearr *self, char *fmt, ... ) {
+  va_list args;
+  va_start( args, fmt );
+  char *data;
+  int len = vasprintf( &data, fmt, args );
+  va_end( args );
+  bytearr__append( self, (uint8_t *) data, len, 0 );
+}
+
+void bytearr__append( bytearr *self, uint8_t *data, uint32_t len, char alloc ) {
   //printf("Appending %i bytes\n", len );
   bytechunk *chunk = bytechunk__new( data, len, alloc );
   if( !self->head ) {
@@ -49,9 +62,9 @@ void bytearr__appendi64( bytearr *self, int64_t num ) {
   bytearr__append( self, (uint8_t *) nump, 8, 1 );
 }
 
-uint8_t *bytearr__bytes( bytearr *self, int *len ) {
+uint8_t *bytearr__bytes( bytearr *self, uint32_t *len ) {
   bytechunk *chunk = self->head;
-  int total = 0;
+  uint32_t total = 0;
   while( chunk ) {
     total += chunk->len;
     chunk = chunk->next;
@@ -59,7 +72,7 @@ uint8_t *bytearr__bytes( bytearr *self, int *len ) {
   uint8_t *bytes = (uint8_t *) malloc( total );
   *len = total;
   chunk = self->head;
-  int pos = 0;
+  uint32_t pos = 0;
   while( chunk ) {
     memcpy( &bytes[ pos ], chunk->data, chunk->len );
     pos += chunk->len;
@@ -91,7 +104,7 @@ void bytearr__auxcf( bytearr *self, CFTypeRef cf, char secure ) {
   bytearr__append( self, data, len, 1 );
 }
 
-uint8_t *bytearr__asaux( bytearr *self, int *len ) {
+uint8_t *bytearr__asaux( bytearr *self, uint32_t *len ) {
   bytechunk *chunk = self->head;
   int64_t total = 16;
   while( chunk ) {

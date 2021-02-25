@@ -6,7 +6,14 @@
 #include<sys/socket.h>
 #include<netdb.h>
 #include<stdlib.h>
+#include<string.h>
+#include<stdio.h>
+#include<unistd.h>
+#include"service.h"
+#include"uclop.h"
+#include"cfutil.h"
 
+static ucmd *g_cmd = NULL;
 void runTunnel( void *device );
 void run_tunnel( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runTunnel ); }
 

@@ -1,13 +1,68 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include"uclop.h"
+#include"service.h"
+#include"nsutil.h"
+#include"cfutil.h"
+#include"archiver.h"
+
+static ucmd *g_cmd = NULL;
 void runBytetest( void *device );
 void run_bytetest( ucmd *cmd ) {
-  g_cmd = cmd;
-  waitForConnect( runBytetest );
+  //g_cmd = cmd;
+  //waitForConnect( runBytetest );
+  runBytetest( 0 );
 }
 
 void runBytetest( void *device ) {
+  /*{
+    CFArrayRef arr = genarr( 2, i8cf( 1 ), str_c2cf( "two" ) );
+    int len;
+    uint8_t *data = cf2archive( arr, &len, 0 );
+    CFTypeRef root = data2plist( data, len );
+    cfdump( 1, root );
+  }*/
+  
+  /*{
+    CFDictionaryRef arr = genmap( 2, "a", i8cf( 1 ) );
+    int len;
+    uint8_t *data = cf2archive( arr, &len, 0 );
+    CFTypeRef root = data2plist( data, len );
+    cfdump( 1, root );
+  */
+  
+  {
+    tSTR *str = tSTR__new("test");
+    
+    uint32_t len;
+    char *bytes = (char *) tBASE__archive( (tBASE *) str, &len );
+    printf("%s", bytes );
+  }
+  {
+    tARR *arr = tARR__new();
+    tARR__addI32( arr, 1 );
+    tARR__addSTR( arr, "two" );
+    
+    uint32_t len;
+    char *bytes = (char *) tBASE__archive( (tBASE *) arr, &len );
+    printf("%s", bytes );
+    
+    tBASE__del( arr );
+  }
+  {
+    tDICT *dict = tDICT__newPairs( 4,
+      "first", (tBASE *) tI32__new( 1 ),
+      "2nd", (tBASE *) tSTR__new( "two" )
+    );
+    tBASE__dump( (tBASE *) dict, 1 );
+    
+    uint32_t len;
+    char *bytes = (char *) tBASE__archive( (tBASE *) dict, &len );
+    printf("%s", bytes );
+  }
+  //dumparchive( data, len );
+  
   /*bytearr *msgb = bytearr__new();
   
   uint8_t bytes[] = { 1,2,3,4 };
@@ -25,14 +80,14 @@ void runBytetest( void *device ) {
   }
   printf("\n\n");*/
   
-  bytearr *aux = bytearr__new();
+  /*bytearr *aux = bytearr__new();
   bytearr__auxi32( aux, 1 );
   bytearr__auxi32( aux, 2 );
   CFDictionaryRef dict = genmap( 2, "a", i32cf(1) );
   //cfdump( 0, dict );
   bytearr__auxcf( aux, dict, 0 );
   
-  int auxLen;
+  uint32_t auxLen;
   uint8_t *auxBytes = bytearr__asaux( aux, &auxLen );
   
   uint32_t crc = crc32(0,(const char *) auxBytes,auxLen);
@@ -44,5 +99,5 @@ void runBytetest( void *device ) {
   }
   printf("\n\n");
   
-  exit(0);
+  exit(0);*/
 }
