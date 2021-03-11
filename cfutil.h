@@ -3,11 +3,15 @@
 #ifndef __CFUTIL_H
 #define __CFUTIL_H
 #include<CoreFoundation/CoreFoundation.h>
+#include"archiver/archiver.h"
 
 CFNumberRef i8cf(  char num    );
 CFNumberRef i16cf( int16_t num );
 CFNumberRef i32cf( int32_t num );
 CFNumberRef i64cf( int64_t num );
+CFNumberRef f1cf( float num );
+CFNumberRef f2cf( double num );
+CFDataRef datacf( const void *data, int len );
 CFBooleanRef boolcf( char val );
 uint64_t cfi64( CFNumberRef num );
 uint16_t cfi16( CFNumberRef num );
@@ -35,7 +39,8 @@ CFArrayRef strsToArr( int count, char **strs );
 CFArrayRef genarr( int count, ... );
 CFArrayRef genstrarr( int count, ... );
 
-CFArrayRef deserialize( const uint8_t *buf, size_t bufsize );
+CFArrayRef deserialize2cf( const uint8_t *buf, size_t bufsize );
+tBASE *deserialize2t( const uint8_t *buf, size_t bufsize );
 
 uint32_t crc32( uint32_t crc, const char *buf, size_t len );
 

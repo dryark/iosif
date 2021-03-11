@@ -15,7 +15,8 @@ void runSysmon( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.sysmontap" );
   
-  CFTypeRef msg = NULL;
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
   
   tARR *procAttrs = tARR__newStrs( 14,
     "memVirtualSize", "cpuUsage", "memRShrd", "memCompressed",
@@ -26,12 +27,13 @@ void runSysmon( void *device ) {
   
   tARR *sysAttrs = tARR__newStrs( 1, "threadCount" );
   
-  tDICT *dict = tDICT__newPairs( 5,
+  tDICT *dict = tDICT__newPairs( 10,
     "ur", tI32__new( 1000 ),
     "bm", tI32__new( 0 ),
     "procAttrs", procAttrs,
     "cpuUsage", tBOOL__new( 0 ),
     "sampleInterval", tI32__new( 1000000000 )
+    //"pids", tARR__newVals( 1, tI32__new( 50895 ) )
   );
   /*CFDictionaryRef dict = genmap( 10,
     "ur", i16cf( 1000 ),
@@ -43,11 +45,14 @@ void runSysmon( void *device ) {
     //"pids", genarr( 1, i16cf( 50906 ) )
   );*/
     
-  if( !channel__send( chan, "setConfig:", (tBASE *) dict, 0 ) ) {
+  tARR *args = tARR__new();
+  tARR__add( args, dict );
+  
+  if( !channel__send( chan, "setConfig:", (tBASE *) args, 0 ) ) {
     fprintf( stderr, "setConfig failed\n" );
     return;
   }
-    
+  
   if( 
     !channel__call( chan,
       "start", 0, 0,
@@ -65,7 +70,8 @@ void runSysmon( void *device ) {
     }
         
     if( msg ) {
-      cfdump( 1, CFArrayGetValueAtIndex( msg, 0 ) );
+      //cfdump( 1, CFArrayGetValueAtIndex( msg, 0 ) );
+      tBASE__dump( msg, 1 );
       i++;
     }
     else sleep(1);

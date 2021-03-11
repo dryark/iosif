@@ -2,12 +2,20 @@
 // Anti-Corruption License
 
 #include<CoreFoundation/CoreFoundation.h>
-#include"nsutil.h"
+//#include"archiver/nsutil.h"
+#include"archiver/archiver.h"
+#include"archiver/unarchiver.h"
 
-CFNumberRef i8cf(  char num    ) { return CFNumberCreate( NULL, kCFNumberCharType,   &num ); }
+CFNumberRef i8cf(  int8_t num  ) { return CFNumberCreate( NULL, kCFNumberSInt8Type,  &num ); }
 CFNumberRef i16cf( int16_t num ) { return CFNumberCreate( NULL, kCFNumberSInt16Type, &num ); }
 CFNumberRef i32cf( int32_t num ) { return CFNumberCreate( NULL, kCFNumberSInt32Type, &num ); }
 CFNumberRef i64cf( int64_t num ) { return CFNumberCreate( NULL, kCFNumberSInt64Type, &num ); }
+CFNumberRef f1cf( float num ) { return CFNumberCreate( NULL, kCFNumberFloat32Type, &num ); }
+CFNumberRef f2cf( double num ) { return CFNumberCreate( NULL, kCFNumberFloat64Type, &num ); }
+CFDataRef datacf( const void *data, int len ) {
+  return CFDataCreateWithBytesNoCopy( kCFAllocatorDefault, ( const uint8_t * ) data, len, NULL );
+}
+
 CFBooleanRef boolcf( char val ) { return val ? kCFBooleanTrue : kCFBooleanFalse; }
 uint64_t cfi64( CFNumberRef num ) {
   uint64_t res;
@@ -104,7 +112,24 @@ void cfdump( int depth, CFTypeRef node ) {
       switch( keyType ) {
         case 0x07: {
           char *key = str_cf2c( cfkey );
-          printf("%s%s:",sp,key);
+          int len = strlen( key );
+          uint8_t needQuotes = 0;
+          for( int i=0;i<len;i++ ) {
+            char let = key[i];
+            if( ! (
+              ( let >= 'a' && let <= 'z' ) ||
+              ( let >= 'A' && let <= 'Z' ) ||
+              ( let >= '0' && let <= '9' ) 
+            ) ) {
+              needQuotes = 1;
+              break;
+            }
+          }
+          if( needQuotes ) {
+            printf("%s\"%s\":",sp,key);
+          } else { 
+            printf("%s%s:",sp,key);
+          }
           break;
         }
         case 0x16: { // number
@@ -136,7 +161,7 @@ void cfdump( int depth, CFTypeRef node ) {
     if( depth > 0 ) {
       printf("x.");
       for( int i=0;i<len;i++ ) {
-        printf("%02x",bytes[i]);
+        printf("%02x",(unsigned char) bytes[i]);
       }
       printf("\n");
     } else {
@@ -145,6 +170,10 @@ void cfdump( int depth, CFTypeRef node ) {
     free( bytes );
     break;
   case 0x15: // bool
+    CFNumberGetValue( node, kCFNumberSInt32Type, &inum32);
+    if( inum32 ) printf("true\n");
+    else         printf("false\n");
+    break;
   case 0x16: // number
     CFNumberGetValue( node, kCFNumberSInt64Type, &inum);
     printf("%" PRId64 "\n", inum );
@@ -165,11 +194,16 @@ void cfdump( int depth, CFTypeRef node ) {
     cfdump( depth+1, userInfo );
     break;
   case 0x29: {// archiver UID
-    void *uid = (void*) node;
-    uint32_t *valuePtr = uid+16;
-    printf("oid.%d\n", *valuePtr );
+      void *uid = (void*) node;
+      uint32_t *valuePtr = uid+16;
+      printf("oid.%d\n", *valuePtr );
+    }
     break;
-  }
+  case 0x2a: {
+      double unix = (double) CFDateGetAbsoluteTime( node ) + (double) kCFAbsoluteTimeIntervalSince1970;
+      printf("%.2f\n", unix );
+    }
+    break;
   default:
     valueType = CFCopyTypeIDDescription( typeId );
     ctype = str_cf2c( valueType );
@@ -242,17 +276,65 @@ typedef struct {
   uint32_t x2; // 12
 } dtxAuxHeader;
 
-CFArrayRef deserialize( const uint8_t *buf, size_t bufsize) {
+tARR *deserialize2t( const uint8_t *buf, size_t bufsize ) {
+  if( bufsize < 16 ) {
+    fprintf(stderr, "Error: buffer of size 0x%lx is too small for a serialized array", bufsize);
+    return NULL;
+  }
+  
+  tARR *array = tARR__new();
+
+  const uint8_t *pos = buf + 16; // skip header
+  uint64_t size = *((uint64_t *)buf+1);
+  const uint8_t *end = pos + size; // header->bufferSize;
+
+  while( pos < end ) {
+    int32_t length = 0;
+    int32_t type = *( (int32_t *) pos );
+    pos += 4;
+
+    tBASE *ref = NULL;
+
+    //printf("Primitive type %d\n", type );
+    switch( type ) {
+      case 1: // string
+      case 2: // object / bytearray
+        length = *( (int32_t *) pos );
+        pos += 4;
+        ref = dearchive( (uint8_t *) pos, length );
+        break;
+
+      case 3:
+      case 5: ref = (tBASE *) tI32__new( *( (int32_t *) pos ) ); length = 4; break; // i32
+
+      case 4:
+      case 6: ref = (tBASE *) tI64__new( *( (int64_t *) pos ) ); length = 4; break; // i32
+
+      case 10: continue; //ref = kCFNull; length = 0; break; // null
+
+      default:
+        printf("Unknown primitive type %d\n", type );
+        break;
+    }
+
+    if( !ref ) {
+      fprintf(stderr, "invalid object at offset %lx, type: %d\n", pos - buf, type);
+      return NULL;
+    }
+
+    tARR__add( array, ref );
+    pos += length;
+  }
+
+  return array;
+}
+
+/*CFArrayRef deserialize2cf( const uint8_t *buf, size_t bufsize) {
   if( bufsize < 16 ) {
     fprintf(stderr, "Error: buffer of size 0x%lx is too small for a serialized array", bufsize);
     return NULL;
   }
 
-  /*uint64_t size = *((uint64_t *)buf+1);
-  if ( size > bufsize ) {
-    fprintf(stderr, "size of array object (%llx) is larger than total length of data (%lx)", size, bufsize);
-    return NULL;
-  }*/
   //dtxAuxHeader *header = (dtxAuxHeader*) buf;
   //uint32_t size = header.bufferSize;
   
@@ -307,7 +389,7 @@ CFArrayRef deserialize( const uint8_t *buf, size_t bufsize) {
   }
 
   return (CFArrayRef) array;
-}
+}*/
 
 uint32_t crc32( uint32_t crc, const char *buf, size_t len ) {
     static uint32_t table[256];

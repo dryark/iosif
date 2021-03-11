@@ -17,25 +17,31 @@ void runNotices( void *device ) {
   
   serviceT *service = service__new_instruments( device );
 
-  CFTypeRef msg = NULL;
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
   
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.mobilenotifications" );
-    
-  if( !channel__send( chan, "setApplicationStateNotificationsEnabled:", (tBASE *) tBOOL__new(1), 0 ) ) {
+  
+  if( !channel__send( chan, "setApplicationStateNotificationsEnabled:", (tBASE *) tI32__new(1), 0 ) ) {
     fprintf( stderr, "setConfig failed\n" );
     return;
   }
   
   for(;;) {
-    CFArrayRef data = NULL;
+    //CFArrayRef data = NULL;
+    tARR *data = NULL;
     if( !channel__recv( chan, &msg, &data ) ) {
       fprintf( stderr, "recvDtx failed\n" );
       return;
     }
     
-    if( data ) cfdump( 0, data );
+    //if( data ) cfdump( 0, data );
+    if( data ) tBASE__dump( (tBASE *) data, 1 );
     
-    if( msg ) cfdump( 0, msg );
+    if( msg ) {
+      //cfdump( 0, msg );
+      tBASE__dump( msg, 1 );
+    }
     else sleep(1);
   }
     

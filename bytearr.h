@@ -2,6 +2,7 @@
 #define __BYTEARR_H
 #include<stdint.h>
 #include<CoreFoundation/CoreFoundation.h>
+#include"archiver/types.h"
 
 typedef struct bytechunk_s bytechunk;
 struct bytechunk_s {
@@ -32,11 +33,13 @@ void bytearr__auxi32( bytearr *self, int32_t val );
 
 void bytearr__auxi64( bytearr *self, int64_t val );
 
-void bytearr__auxcf( bytearr *self, CFTypeRef cf, char secure );
+//void bytearr__auxcf( bytearr *self, CFTypeRef cf, char secure );
+void bytearr__auxT( bytearr *self, tBASE *t );
 
 uint8_t *bytearr__asaux( bytearr *self, uint32_t *len );
 
-bytearr *cfarr2aux( CFTypeRef argsCf, char secure );
+//bytearr *cfarr2aux( CFTypeRef argsCf, char secure );
+bytearr *tarr2aux( tARR *argsT );
 
 void ba__print( bytearr *self, char *fmt, ... );
 

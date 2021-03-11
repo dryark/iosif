@@ -4,6 +4,7 @@
 #include<stdint.h>
 #include"service.h"
 #include"uclop.h"
+#include"archiver/byteswap.h"
 
 static ucmd *g_cmd = NULL;
 void runSysCfg( void *device );
@@ -192,6 +193,7 @@ NM("WRxT","Wifi Receiver temp. Calibration")
   uint32_t total = 0x18 + 0x14 * keyCount;
   uint32_t dataStart = total;
   for( int e=0;e<keyCount;e++ ) {
+    printf("\n");
     unsigned char *entry = ( e * 0x14 ) + 0x18 + bytes;
     for( int i=0;i<0x14;i++ ) {
       printf("%02i ", i );
@@ -201,8 +203,13 @@ NM("WRxT","Wifi Receiver temp. Calibration")
       printf("%02x ", *( entry + i ) );
     }
     printf("\n");
-    uint32_t entryLen = * ( (uint32_t *) ( (char *) entry + 8 ) );
-    uint32_t entryStart = * ( (uint32_t *) ( (char *) entry + 12 ) );
+    uint32_t entryLen = *(
+      (uint32_t *) ( (char *) entry + 8 )
+    );
+    
+    uint32_t entryStart = *(
+      (uint32_t *) ( (char *) entry + 12 )
+    );
     //if( entryLen == 0 ) entryLen = 4;
     
     //if( entry[0] == 0x42 && entry[1] == 0x54 )

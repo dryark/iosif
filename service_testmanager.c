@@ -5,7 +5,7 @@
 #include"service.h"
 #include"uclop.h"
 #include"cfutil.h"
-#include"archiver.h"
+#include"archiver/archiver.h"
 
 static ucmd *g_cmd = NULL;
 void runXctest( void *device ) {

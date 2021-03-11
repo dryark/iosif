@@ -30,6 +30,9 @@ extern int AMDeviceSecureInstallApplication( int, void *device, CFURLRef, CFDict
 extern int AMDeviceSecureUninstallApplication( void *service, void * dunno, CFStringRef bundleIdentifier, CFDictionaryRef params, void (*installCallback)(CFDictionaryRef, void *));
 //extern int AMDeviceSecureInstallApplicationBundle(void *device, CFURLRef, CFDictionaryRef params, void (*installCallback)(CFDictionaryRef, void *));
 
+extern int AMDeviceLookupApplications( void *device, CFDictionaryRef options, CFDictionaryRef *dictOut );
+
+
 typedef struct muxListenIn_s muxListenIn;
 typedef struct muxListenOut_s muxListenOut;
 struct muxListenIn_s {

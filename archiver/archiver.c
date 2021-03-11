@@ -8,11 +8,61 @@
 #include<stdarg.h>
 
 #include"archiver.h"
-#include"bytearr.h"
+#include"../bytearr.h"
+
+tI8 *tI8__new( uint8_t val ) {
+  tI8 *self = (tI8 *) calloc( 1, sizeof( tI8 ) );
+  self->type = xfI8;
+  self->val = val;
+  return self;
+}
+
+tI16 *tI16__new( uint16_t val ) {
+  tI16 *self = (tI16 *) calloc( 1, sizeof( tI16 ) );
+  self->type = xfI16;
+  self->val = val;
+  return self;
+}
 
 tI32 *tI32__new( uint32_t val ) {
   tI32 *self = (tI32 *) calloc( 1, sizeof( tI32 ) );
   self->type = xfI32;
+  self->val = val;
+  return self;
+}
+
+tI64 *tI64__new( int64_t val ) {
+  tI64 *self = (tI64 *) calloc( 1, sizeof( tI64 ) );
+  self->type = xfI64;
+  self->val = val;
+  return self;
+}
+
+tF1 *tF1__new( float val ) {
+  tF1 *self = (tF1 *) calloc( 1, sizeof( tF1 ) );
+  self->type = xfF1;
+  self->val = val;
+  return self;
+}
+
+tF2 *tF2__new( double val ) {
+  tF2 *self = (tF2 *) calloc( 1, sizeof( tF2 ) );
+  self->type = xfF2;
+  self->val = val;
+  return self;
+}
+
+tDATA *tDATA__new( uint8_t *val, uint32_t len ) {
+  tDATA *self = (tDATA *) calloc( 1, sizeof( tDATA ) );
+  self->type = xfDATA;
+  self->val = val;
+  self->len = len;
+  return self;
+}
+
+tTIME *tTIME__new( double val ) {
+  tTIME *self = (tTIME *) calloc( 1, sizeof( tTIME ) );
+  self->type = xfTIME;
   self->val = val;
   return self;
 }
@@ -28,6 +78,14 @@ tSTR *tSTR__new( char *val ) {
   tSTR *self = (tSTR *) calloc( 1, sizeof( tSTR ) );
   self->type = xfSTR;
   self->val = val;
+  return self;
+}
+
+tSTR *tSTR__newl( char *val, int len ) {
+  tSTR *self = (tSTR *) calloc( 1, sizeof( tSTR ) );
+  self->type = xfSTR;
+  char *buffer = self->val = (char *) malloc( len + 1 );
+  sprintf( buffer, "%.*s", len, val );
   return self;
 }
 
@@ -104,6 +162,7 @@ tDICT *tDICT__newPairs( int count, ... ) {
 }
 
 void _tARR__add( tARR *self, tBASE *ob ) {
+  self->count++;
   if( !self->head ) {
     self->head = self->tail = ob;
     return;
@@ -207,7 +266,10 @@ uint32_t tDICT__toobs( tDICT *self, tOBS *obs ) {
 
 void _tDICT__set( tDICT *self, char *rawKey, tBASE *val ) {
   tBASE *key = (tBASE *) tSTR__new( rawKey );
-  
+  _tDICT__seto( self, key, val );
+}
+
+void _tDICT__seto( tDICT *self, tBASE *key, tBASE *val ) {
   if( !self->keyHead ) {
     self->keyHead = self->keyTail = key;
     self->valHead = self->valTail = val;
@@ -224,10 +286,61 @@ void _tDICT__set( tDICT *self, char *rawKey, tBASE *val ) {
   self->keyTail = key;
   self->valTail->next = val;
   self->valTail = val;
+  self->count++;
 }
 
+tBASE *tDICT__get( tDICT *self, char *key ) {
+  tSTR *cur = (tSTR *) self->keyHead;
+  tBASE *curVal = self->valHead;
+  while( cur ) {
+    //printf("Find type:%d\n", cur->type );
+    if( !strcmp( cur->val, key ) ) {
+      //printf("Returning\n");
+      return curVal;
+    }
+    cur = (tSTR *) cur->next;
+    curVal = curVal->next;
+  }
+  //printf("%s not found\n", key );
+  return 0;
+}
+
+uint32_t tI__val32( tBASE *self ) {
+  uint32_t val;
+  switch( self->type ) {
+  case xfI8: val=( ( (tI8*) self ) )->val; break;
+  case xfI16: val=( ( (tI16*) self ) )->val; break;
+  case xfI32: val=( ( (tI32*) self ) )->val; break;
+  }
+  return val;
+}
+void tI8__dump( tI8 *self, uint8_t depth ) {
+  printf("%u\n", self->val );
+}
+void tI16__dump( tI16 *self, uint8_t depth ) {
+  printf("%u\n", self->val );
+}
 void tI32__dump( tI32 *self, uint8_t depth ) {
-  printf("%d\n", self->val );
+  printf("%" PRIu32 "\n", self->val );
+}
+void tI64__dump( tI64 *self, uint8_t depth ) {
+  printf("%" PRId64 "\n", self->val );
+}
+void tF1__dump( tF1 *self, uint8_t depth ) {
+  printf("%.2f\n", self->val );
+}
+void tF2__dump( tF2 *self, uint8_t depth ) {
+  printf("%.2f\n", self->val );
+}
+void tTIME__dump( tTIME *self, uint8_t depth ) {
+  printf("%.2f\n", self->val );
+}
+void tDATA__dump( tDATA *self, uint8_t depth ) {
+  printf("x.");
+  for( int i=0;i<self->len;i++ ) {
+    printf("%02x", self->val[i] );
+  }
+  printf("\n");
 }
 
 void tBOOL__dump( tBOOL *self, uint8_t depth ) {
@@ -240,10 +353,17 @@ void tI32__xml( tI32 *self, bytearr *ba, uint8_t depth ) {
 }
 
 void tBOOL__xml( tBOOL *self, bytearr *ba, uint8_t depth ) {
+  //if( self->val ) {
+  //  ba__print(ba,"1\n" );
+  //} else {
+  //  ba__print(ba,"0\n" );
+  //}
+  
   if( self->val ) {
-    ba__print(ba,"<true/>\n" );
-  } else {
-    ba__print(ba,"<false/>\n" );
+    ba__print(ba,"<true/>\n", self->val );
+  }
+  else {
+    ba__print(ba,"<false/>\n", self->val );
   }
 }
 
@@ -286,9 +406,30 @@ void tDICT__dump( tDICT *self, uint8_t depth ) {
   tBASE *curKey = self->keyHead;
   tBASE *curVal = self->valHead;
   while( curKey ) {
-    switch( curKey->type ) {
-    case xfSTR:
-      printf("%s%s:", sp, ( (tSTR*) curKey )->val );
+    tBASE *unrefKey = curKey;
+    while( unrefKey->type == xfREF ) unrefKey = ( (tREF *) unrefKey)->val;
+    switch( unrefKey->type ) {
+      case xfI8:
+        printf("%s%d:", sp, ( (tI8*) unrefKey )->val );
+        break;
+      case xfI16:
+        printf("%s%d:", sp, ( (tI16*) unrefKey )->val );
+        break;
+      case xfI32:
+        printf("%s%" PRIu32 ":", sp, ( (tI32*) unrefKey )->val );
+        break;
+      case xfI64:
+        printf("%s%" PRId64 ":", sp, ( (tI64*) unrefKey )->val );
+        break;
+      case xfSTR:
+        printf("%s%s:", sp, ( (tSTR*) unrefKey )->val );
+        break;
+      case xfARCID:
+        printf("%soid.%d:", sp, ( (tARCID*) unrefKey )->val );
+        break;
+      default:
+        printf("Other key type:%d\n", unrefKey->type );
+        break;
     }
     tBASE__dump( curVal, depth + 1 );
     curKey = curKey->next;
@@ -325,6 +466,28 @@ void tARR__del( tARR *self ) {
     tBASE__del( cur );
     cur = next;
   }
+  self->count--;
+}
+
+void **tARR__flatten( tARR *self ) {
+  tBASE *cur = self->head;
+  uint32_t pos = 0;
+  void **res = ( void ** ) malloc( sizeof( void * ) * self->count );
+  while( cur ) {
+    res[ pos++ ] = (void *) cur;
+    cur = cur->next;
+  }
+  return res;
+}
+
+tBASE *tARR__get( tARR *self, uint32_t pos ) {
+  tBASE *cur = self->head;
+  while( pos ) {
+    if( !cur ) return 0;
+    cur = cur->next;
+    pos--;
+  }
+  return cur;
 }
 
 void tOBS__del( tOBS *self ) {
@@ -342,6 +505,7 @@ void tARR__dump( tARR *self, uint8_t depth ) {
   sp[depth*2] = 0x00;
   if( depth == 1 ) sp[2] = 0x00;
   
+  //printf("Count:%d\n", self->count );
   printf("[\n");
   tBASE *cur = self->head;
   while( cur ) {
@@ -403,13 +567,20 @@ void tOBS__xml( tOBS *self, bytearr *ba, uint8_t depth ) {
 
 void tBASE__dump( tBASE *ob, uint8_t depth ) {
   switch( ob->type ) {
+    case xfI8:    return tI8__dump(     (tI8 *)    ob, depth );
+    case xfI16:   return tI16__dump(    (tI16 *)   ob, depth );
     case xfI32:   return tI32__dump(    (tI32 *)   ob, depth );
+    case xfI64:   return tI64__dump(    (tI64 *)   ob, depth );
     case xfBOOL:  return tBOOL__dump(   (tBOOL *)  ob, depth );
     case xfSTR:   return tSTR__dump(    (tSTR *)   ob, depth );
     case xfARR:   return tARR__dump(    (tARR *)   ob, depth );
     case xfDICT:  return tDICT__dump(   (tDICT *)  ob, depth );
     case xfARCID: return tARCID__dump(  (tARCID *) ob, depth );
     case xfREF:   return tBASE__dump( ( (tREF *) ob )->val, depth );
+    case xfTIME:  return tTIME__dump(   (tTIME *)  ob, depth );
+    case xfF1:    return tF1__dump(     (tF1 *)    ob, depth );
+    case xfF2:    return tF2__dump(     (tF2 *)    ob, depth );
+    case xfDATA:  return tDATA__dump(   (tDATA *)  ob, depth );
   }
 }
 
@@ -432,7 +603,6 @@ uint32_t _tOBS__add( tOBS *self, tBASE *ob ) {
     case xfSTR:  return tSTR__toobs(  (tSTR *)  ob, self );
     case xfARR:  return tARR__toobs(  (tARR *)  ob, self );
     case xfDICT: return tDICT__toobs( (tDICT *) ob, self );
-    
   }
   return 0;
 }
@@ -446,10 +616,84 @@ void _tBASE__del( tBASE *self ) {
   free( self );
 }
 
+tSTR *tSTR__dup( tSTR *self ) {
+  return tSTR__new( strdup( self->val ) );
+}
+
+tDATA *tDATA__dup( tDATA *self ) {
+  void *copy = malloc( self->len );
+  memcpy( copy, self->val, self->len );
+  return tDATA__new( copy, self->len );
+}
+
+tARR *tARR__dup( tARR *self ) {
+  tARR *dup = tARR__new();
+  
+  tBASE *cur = self->head;
+  while( cur ) {
+    tARR__add( dup, tBASE__dup( cur ) );
+    cur = cur->next;
+  }
+  return dup;
+}
+
+tDICT *tDICT__dup( tDICT *self ) {
+  tDICT *dup = tDICT__new();
+  
+  printf("Orig size:%d\n", self->count );
+  tBASE *curKey = self->keyHead;
+  tBASE *curVal = self->valHead;
+  while( curKey ) {
+    tDICT__seto( dup, tBASE__dup( curKey ), tBASE__dup( curVal ) );
+    curKey = curKey->next;
+    curVal = curVal->next;
+  }
+  printf("Dup size:%d\n", dup->count );
+  return dup;
+}
+
+tREF *tREF__dup( tREF *self ) {
+  return (tREF *) tREF__new( self->val );
+}
+
+tBASE *_tBASE__dup( tBASE *self ) {
+  switch( self->type ) {
+    case xfSTR:  return (tBASE *) tSTR__dup(  (tSTR  *) self );
+    case xfDATA: return (tBASE *) tDATA__dup( (tDATA *) self );
+    case xfARR:  return (tBASE *) tARR__dup(  (tARR  *) self );
+    case xfDICT: return (tBASE *) tDICT__dup( (tDICT *) self );
+    case xfREF:  return (tBASE *) tREF__dup(  (tREF  *) self );
+  }
+  uint32_t size;
+  switch( self->type ) {
+    case xfI8:    size = sizeof( tI8    ); break;
+    case xfI16:   size = sizeof( tI16   ); break;
+    case xfI32:   size = sizeof( tI32   ); break;
+    case xfI64:   size = sizeof( tI64   ); break;
+    case xfF1:    size = sizeof( tF1    ); break;
+    case xfF2:    size = sizeof( tF2    ); break;
+    case xfTIME:  size = sizeof( tTIME  ); break;
+    case xfARCID: size = sizeof( tARCID ); break;
+    default:
+      printf("Cannot duplicate type %d\n", self->type );
+      break;
+  }
+  tBASE *dup = malloc( size );
+  memcpy( dup, (void *) self, size );
+  dup->next = 0;  
+  return (tBASE*) dup;
+}
+
 tBOOL *tBOOL__new( uint8_t val ) {
   tBOOL *self = (tBOOL *) calloc( 1, sizeof( tBOOL ) );
   self->type = xfBOOL;
   self->val = val;
+  return self;
+}
+
+tNULL *tNULL__new() {
+  tNULL *self = (tNULL *) calloc( 1, sizeof( tNULL ) );
+  self->type = xfNULL;
   return self;
 }
 

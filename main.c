@@ -1,6 +1,8 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
 
+#include<stdio.h>
+
 #include"uclop.h"
 
 #include"cmd_ioreg.h"
@@ -13,10 +15,15 @@
 #include"cmd_mg.h"
 #include"cmd_img.h"
 #include"cmd_list.h"
+#include"cmd_listapps.h"
 #include"cmd_syslog.h"
 #include"service_deviceinfo.h"
 #include"service_notifications.h"
 #include"service_sysmon.h"
+
+void run_version( ucmd *cmd ) {
+  printf("1.0\n");
+}
 
 int main (int argc, char **argv) {
   uopt *idopt = UOPT("-id","UDID of device");
@@ -31,6 +38,16 @@ int main (int argc, char **argv) {
     UOPT_FLAG("-subsec","Subsecond start precision"),
     UOPT_FLAG("-short","Show name only, not full path"),
     UOPT_FLAG("-apps","Show apps only"),
+    UOPT("-appname","Show info only for specific program"),
+    UOPT_FLAG("-raw","Show all raw results"),
+    idopt, 0
+  };
+  uopt *opts_iserver[] = {
+    UOPT("-port","Nanomsg port to listen on"),
+    idopt, 0
+  };
+  uopt *opts_listapps[] = {
+    UOPT("-bi","Bundle Identifier of a specific app to list"),
     idopt, 0
   };
   
@@ -51,6 +68,11 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "notices",      "Mobile Notifications",        &run_notices,      0 );
   uclop__addcmd( opts, "battery",      "Battery Info",                &run_battery,      0 );
   uclop__addcmd( opts, "install",      "Install Application",         &run_install,      opts_install );
+  uclop__addcmd( opts, "listapps",     "List Applications",           &run_listapps,     opts_listapps );
+  uclop__addcmd( opts, "version",      "Version",                     &run_version,      0 );
+  #ifdef NNG
+  uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
+  #endif
   
   ucmd *mg = uclop__addcmd( opts, "mg", "Mobile Gestalt", &run_mg, udid_w_json_option );
   mg->extrahelp = "[key] [[key]...]";

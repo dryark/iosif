@@ -26,12 +26,14 @@ void runSmProcList( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
   
-  CFTypeRef ls;
+  //CFTypeRef ref;
+  tBASE *ref;
   channel__call( chan,
     "sysmonProcessAttributes", NULL, 0,
-    &ls, NULL
+    &ref, NULL
   );
-  printf("%s",cftype( ls ) );
+  //printf("%s",cftype( ls ) );
+  tBASE__dump( ref, 1 );
   
   service__del( service );
   exit(0);
@@ -42,12 +44,14 @@ void runSmSysList( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
   
-  CFTypeRef ls;
+  //CFTypeRef ref;
+  tBASE *ref;
   channel__call( chan,
     "sysmonSystemAttributes", NULL, 0,
-    &ls, NULL
+    &ref, NULL
   );
-  printf("%s",cftype( ls ) );
+  //printf("%s",cftype( ls ) );
+  tBASE__dump( ref, 1 );
   
   service__del( service );
   exit(0);
@@ -58,12 +62,14 @@ void runSmCoalList( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
   
-  CFTypeRef ls;
+  //CFTypeRef ref;
+  tBASE *ref;
   channel__call( chan,
     "sysmonCoalitionAttributes", NULL, 0,
-    &ls, NULL
+    &ref, NULL
   );
-  printf("%s",cftype( ls ) );
+  //printf("%s",cftype( ref ) );
+  tBASE__dump( ref, 1 );
   
   service__del( service );
   exit(0);
@@ -74,12 +80,16 @@ void runMachTimeInfo( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
   
-  CFTypeRef ls;
-  channel__call( chan, "machTimeInfo", NULL, 0, &ls, NULL );
+  //CFTypeRef ls;
+  tARR *arr;
+  channel__call( chan, "machTimeInfo", NULL, 0, (tBASE **) &arr, NULL );
   
-  uint16_t numerator   = cfi16( CFArrayGetValueAtIndex( ls, 1 ) );
-  uint16_t denominator = cfi16( CFArrayGetValueAtIndex( ls, 2 ) );
-  uint64_t upTimeMach  = cfi64( CFArrayGetValueAtIndex( ls, 3 ) );
+  //uint16_t numerator   = cfi16( CFArrayGetValueAtIndex( arr, 1 ) );
+  //uint16_t denominator = cfi16( CFArrayGetValueAtIndex( arr, 2 ) );
+  //uint64_t upTimeMach  = cfi64( CFArrayGetValueAtIndex( arr, 3 ) );
+  uint16_t numerator   = ( (tI16 *) tARR__get( arr, 1 ) )->val;
+  uint16_t denominator = ( (tI16 *) tARR__get( arr, 2 ) )->val;
+  uint64_t upTimeMach  = ( (tI64 *) tARR__get( arr, 3 ) )->val;
   upTimeMach /= 1000000000;
   uint32_t cur = upTimeMach * numerator / denominator;
   
@@ -101,7 +111,8 @@ void runMachTimeInfo( void *device ) {
   printf("Time factor: %.2f\n", time_factor );
   
   printf("Mach absolute time: ");
-  cfdump(0,CFArrayGetValueAtIndex( ls, 0 ));
+  //cfdump(0,CFArrayGetValueAtIndex( arr, 0 ));
+  tBASE__dump( tARR__get( arr, 0 ), 1 );
     
   service__del( service );
   exit(0);
@@ -113,12 +124,14 @@ void runLs( void *device ) {
   serviceT *service = service__new_instruments( device );
   channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
   
-  CFTypeRef ls;
+  //CFTypeRef ls;
+  tBASE *ls;
   channel__call( chan,
     "directoryListingForPath:", (tBASE *) tSTR__new( g_cmd->argv[0] ), 0,
     &ls, NULL
   );
-  cfdump( 1, ls );
+  //cfdump( 1, ls );
+  tBASE__dump( ls, 1 );
   
   service__del( service );
   exit(0);
@@ -134,7 +147,8 @@ void runPs( void *device ) {
   char nameonly = ucmd__get( g_cmd, "-short"  ) ? 1 : 0;
   char appsonly = ucmd__get( g_cmd, "-apps"   ) ? 1 : 0;
   
-  CFTypeRef msg;
+  //CFTypeRef msg;
+  tBASE *msg = NULL;
   
   channel__call( chan,
     "runningProcesses", NULL, 0,
@@ -145,10 +159,10 @@ void runPs( void *device ) {
     exit(0);
   }
   
-  cfdump( 1, msg );
+  //cfdump( 1, msg );
   
   char ok = 1;
-  if( iscfarr( msg ) ) {
+  /*if( iscfarr( msg ) ) {
     CFArrayRef array = (CFArrayRef) msg;
 
     for( size_t i = 0, size = CFArrayGetCount(array); i < size; i++ ) {
@@ -181,13 +195,74 @@ void runPs( void *device ) {
         printf( "{ pid:%d,\n  path:\"%s\",\n  start:%d },\n", pid, name, unixSec );
       }
     }
+  }*/
+  if( msg->type == xfARR ) {
+    tARR *array = (tARR *) msg;
+
+    char *oneApp = ucmd__get( g_cmd, "-appname" );
+    char *raw = ucmd__get( g_cmd, "-raw" );
+    
+    uint8_t found = 0;
+    for( size_t i = 0, size = array->count; i < size; i++ ) {
+      tDICT *dict = (tDICT *) tARR__get( array, i );
+      if( dict->type == xfREF ) dict = (tDICT *) ( (tREF *) dict )->val;
+      
+      tSTR *shortNameT = (tSTR *) tDICT__get( dict, "name" );
+      if( shortNameT->type == xfREF ) shortNameT = (tSTR *) ( (tREF *) shortNameT )->val;
+      
+      //printf("Comparing %s with %s\n", shortNameT->val, oneApp );
+      if( oneApp && strcmp( shortNameT->val, oneApp ) ) continue;
+      found = 1;
+      if( raw ) {
+        tBASE__dump( (tBASE *) dict, 1 );
+        break;
+      }
+      
+      tSTR *nameT;
+      if( nameonly ) nameT = (tSTR *) tDICT__get( dict, "name" );
+      else           nameT = (tSTR *) tDICT__get( dict, "realAppName" );
+      if( nameT->type == xfREF ) nameT = (tSTR *) ( (tREF *) nameT )->val;
+      
+      char *name = nameT->val;
+      tBASE *pidT = tDICT__get( dict, "pid" );
+      if( pidT->type == xfREF ) pidT = (tBASE *) ( (tREF *) pidT )->val;
+      
+      int32_t pid = tI__val32( pidT );
+      //CFNumberGetValue( _pid, kCFNumberSInt32Type, &pid );
+      
+      //tBOOL *boolT = (tBOOL *) tDICT__get( dict, "isApplication" );
+      //char isapp = boolT->val;
+      //if( appsonly && !isapp ) continue;
+      
+      //CFDateRef start = (CFDateRef) CFDictionaryGetValue( dict, CFSTR("startDate") );
+      //double unix = (double) CFDateGetAbsoluteTime( start ) + kCFAbsoluteTimeIntervalSince1970;
+      tTIME *startT = (tTIME *) tDICT__get( dict, "startDate" );
+      double unix = 0;
+      if( startT ) {
+        if( startT->type == xfREF ) startT = (tTIME *) ( (tREF *) startT )->val;
+        unix = startT->val;// + kCFAbsoluteTimeIntervalSince1970;
+      }
+      else continue; // mach_kernel has no startDate... just don't output it
+      if( subsec ) {
+        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%.2f },\n", pid, name, unix );
+      } 
+      else {
+        uint32_t unixSec = (uint32_t) unix;
+        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%d },\n", pid, name, unixSec );
+      }
+    }
+    if( oneApp && !found ) {
+      fprintf( stderr, "Could not find running app with name %s\n", oneApp ); 
+      service__del( service );
+      exit(1);
+    }
   }
   else {
     fprintf(stderr, "Process result not array; is: %s\n", cftype(msg) );
     ok = 0;
   }
 
-  CFRelease( msg );
+  //CFRelease( msg );
   
   service__del( service );
   exit(0);

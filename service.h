@@ -5,12 +5,13 @@
 #include"mobiledevice.h"
 #include"mobdev_err.h"
 #include"uclop.h"
-#include"archiver.h"
+#include"archiver/archiver.h"
 
 typedef struct {
   void *service;
   char secure;
-  CFDictionaryRef channels;
+  //CFDictionaryRef channels;
+  tDICT *channels;
 } serviceT;
 
 typedef struct {
@@ -29,15 +30,27 @@ char service__handshake( serviceT *self );
 channelT *channel__new( void *service, char secure, int id );
 char channel__send( channelT *chan, const char *method, tBASE *args, uint8_t flags );
 char channel__send_withid( channelT *self, const char *method, tBASE *args, uint8_t flags, uint32_t id );
-char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut );
-char channel__call( channelT *chan, const char *method, tBASE *args,
-    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut );
 
-char service__send( serviceT *self, CFTypeRef msg, tBASE *aux, uint8_t flags );
-char service__recv( serviceT *self, CFTypeRef *msg, CFArrayRef *aux );
+//char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut );
+char channel__recv( channelT *self, tBASE **msgOut, tARR **argOut );
+
+//char channel__call( channelT *chan, const char *method, tBASE *args,
+//    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut );
+char channel__call( channelT *chan, const char *method, tBASE *args,
+    uint8_t flags, tBASE **msgOut, tARR **auxOut );
+
+//char service__send( serviceT *self, CFTypeRef msg, tBASE *aux, uint8_t flags );
+char service__send( serviceT *self, char *msg, tBASE *ux, uint8_t flags );
+
+//char service__recv( serviceT *self, CFTypeRef *msg, CFArrayRef *aux );
+char service__recv( serviceT *self, tBASE **msg, tARR **aux );
+
+//char service__call( serviceT *self, 
+//  const char *method, tBASE *args, uint8_t flags,
+//  CFTypeRef *msgOut, CFArrayRef *auxOut );
 char service__call( serviceT *self, 
-  const char *method, tBASE *args, uint8_t flags,
-  CFTypeRef *msgOut, CFArrayRef *auxOut );
+    const char *method, tBASE * args, uint8_t flags,
+    tBASE **msgOut, tARR **auxOut );
 
 void service__del( serviceT *self );
 

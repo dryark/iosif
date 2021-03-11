@@ -6,9 +6,10 @@
 #include"bytearr.h"
 #include"dtxmsg.h"
 #include"cfutil.h"
-#include"nsutil.h"
+//#include"nsutil.h"
 #include"service.h"
-#include"archiver.h"
+#include"archiver/archiver.h"
+#include"archiver/unarchiver.h"
 
 int g_msg_id = 0;
 
@@ -25,8 +26,10 @@ char channel__send( channelT *chan, const char *method, tBASE *args, uint8_t fla
   return channel__send_withid( chan, method, args, flags, id );
 }
 
+//char channel__call( channelT *chan, const char *method, tBASE *args,
+//    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut ) {
 char channel__call( channelT *chan, const char *method, tBASE *args,
-    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut ) {
+    uint8_t flags, tBASE **msgOut, tARR **auxOut ) {
   #ifdef DEBUG
   printf("Channel call:\n  channel=%d\n  method=%s\n  args=", chan->channel, method);
   //if( args ) cfdump( 1, args );
@@ -97,7 +100,7 @@ char channel__send_withid( channelT *self, const char *method, tBASE *argsT, uin
   return 1;
 }
 
-char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut ) {
+char channel__recv( channelT *self, tBASE **msgOut, tARR **argOut ) {
   uint32_t id = 0;
   
   bytearr *payloadb = bytearr__new();
@@ -192,7 +195,8 @@ char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut ) {
   #endif
 
   if( auxlen && argOut ) {
-    CFArrayRef auxArr = deserialize( aux, auxlen );
+    //CFArrayRef auxArr = deserialize2cf( aux, auxlen );
+    tARR *auxArr = (tARR *) deserialize2t( aux, auxlen );
     if( !auxArr) return 0;
     if( auxArr ) *argOut = auxArr;
   }
@@ -204,20 +208,26 @@ char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut ) {
     //  printf("%02x", objptr[i] );
     //}
     
-    CFTypeRef cfMsg = archive2cf( (uint8_t *) objptr, objlen );
+    //CFTypeRef cfMsg = archive2cf( (uint8_t *) objptr, objlen );
+    tBASE *tMsg = dearchive( (uint8_t *) objptr, objlen );
     #ifdef DEBUG
     printf("Recevived DTX msg:");
-    if( cfMsg ) cfdump( 1, cfMsg );
+    if( tMsg ) {
+      //cfdump( 1, cfMsg );
+      tBASE__dump( tMsg, 1 );
+    }
     else printf("nil/not archive\n");
     #endif
     
     //printf( "%s", cftype( cfMsg ) );
     //exit(0);
-    if( cfMsg == NULL ) {
+    //if( cfMsg == NULL ) {
+    if( tMsg == NULL ) {
       printf("Could not unarchive. Dumping\n");
       dumparchive( objptr, objlen );
     }
-    *msgOut = cfMsg;
+    //*msgOut = cfMsg;
+    *msgOut = tMsg;
   }
   else if( msgOut ) {
     *msgOut = NULL;

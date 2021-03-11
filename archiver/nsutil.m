@@ -1,7 +1,7 @@
 #include<CoreFoundation/CoreFoundation.h>
 #include<Foundation/Foundation.h>
 #include<stdint.h>
-#include"cfutil.h"
+//#include"cfutil.h"
 
 uint8_t *cf2archive( CFTypeRef cf, int *len, char secure ) {
   //@autoreleasepool {

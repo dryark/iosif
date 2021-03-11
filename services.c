@@ -7,7 +7,7 @@
 void *activateService( void *device, CFTypeRef serviceName, CFDictionaryRef options ) {
   devUp( device );
   void *service;
-  exitOnError( AMDeviceSecureStartService( device, serviceName, options, &service ), "Start Syslog Service" );
+  exitOnError( AMDeviceSecureStartService( device, serviceName, options, &service ), "Some Service" );
   devDown( device );
   return service;
 }

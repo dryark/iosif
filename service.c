@@ -29,7 +29,8 @@ serviceT *service__new( void *device, char *name, char *secureName ) {
 
 channelT *service__connect_channel( serviceT *service, char *name ) {
   // testmanagerd uses hidden channels :(
-  if( !CFDictionaryContainsKey( service->channels, str_c2cf(name) ) ) {
+  //if( !CFDictionaryContainsKey( service->channels, str_c2cf(name) ) ) {
+  if( !tDICT__get( service->channels, name ) ) {
     fprintf( stderr, "channel %s not in list\n", name );
     return NULL;
   }
@@ -45,7 +46,8 @@ channelT *service__connect_channel( serviceT *service, char *name ) {
     tI32__new( code ),
     tSTR__new(name)
   );
-  CFTypeRef msg = NULL;
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
   
   if( !service__send( service, "_requestChannelWithCode:identifier:", (tBASE *) args, SEND_HASREPLY ) ) {
     printf("Could not send channel request\n");
@@ -58,8 +60,10 @@ channelT *service__connect_channel( serviceT *service, char *name ) {
   
   if( msg ) {
     fprintf( stderr, "Error: _requestChannelWithCode:identifier: returned %s\n", cftype(msg) );
-    cfdump( 0, msg );
-    CFRelease( msg );
+    //cfdump( 0, msg );
+    tBASE__dump( msg, 1 );
+    
+    //CFRelease( msg );
     return NULL;
   }
   
@@ -93,8 +97,11 @@ char service__handshake( serviceT *self ) {
   
   //CFRelease( caps );
 
-  CFTypeRef msg = NULL;
-  CFArrayRef arg = NULL;
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
+  
+  //CFArrayRef arg = NULL;
+  tARR *arg = NULL;
 
   if( !service__recv( self, &msg, &arg ) || !msg || !arg ) {
     fprintf(stderr, "recvDtxMessage failed:\n");
@@ -103,11 +110,12 @@ char service__handshake( serviceT *self ) {
   
   #ifdef DEBUG
   printf("Handshake response: ");
-  cfdump( 1, msg );
+  //cfdump( 1, msg );
+  tBASE__dump( msg, 1 );
   #endif
   //printf("Received response\n");
 
-  CFDictionaryRef channels = NULL;
+  /*CFDictionaryRef channels = NULL;
   do {
     if( !iscfstr( msg ) ) {
       fprintf( stderr, "Handshake response isn't a message: %s\n", cftype(msg) );
@@ -154,12 +162,63 @@ char service__handshake( serviceT *self ) {
     cfdump(1,channels);
     #endif
   }
+  while( false );*/
+  
+  tDICT *channels = NULL;
+  do {
+    if( msg->type != xfSTR ) {
+      fprintf( stderr, "Handshake response isn't a message: %d\n", msg->type );
+      break;
+    }
+    tSTR *msgT = (tSTR *) msg;
+    if( strcmp( msgT->val, "_notifyOfPublishedCapabilities:" ) ) {
+      fprintf(stderr, "Handshake response is wrong: %s\n", cftype(msg) );
+      break;
+    }
+
+    if( arg->type != xfARR ) {
+      fprintf(stderr,"handshake arg response is not an array; is: %d\n", arg->type );
+      break;
+    }
+    
+    if( arg->count != 1 ) {
+      fprintf(stderr,"handshake arg response is not an array of len 1; len is: %d\n", arg->count );
+      break;
+    }
+    
+    channels = (tDICT *) tARR__get( (tARR *) arg, 0 );
+    if( !channels ) {
+      fprintf(stderr,"handshake arg[0] is empty\n" );
+      channels = NULL;
+      break;
+    }
+    
+    if( channels->type != xfDICT ) {
+      fprintf(stderr,"handshake arg[0] is not a dict; is: %d\n", channels->type );
+      channels = NULL;
+      break;
+    }
+    
+    if( ! channels->count ) {
+      fprintf(stderr, "handshake arg[0] is empty dict\n" );
+      channels = NULL;
+      break;
+    }
+
+    //CFRetain( channels );
+
+    #ifdef DEBUG2
+    printf("Channel list:");
+    //cfdump(1,channels);
+    tBASE__dump( (tBASE *) channels, 1 );
+    #endif
+  }
   while( false );
   
   self->channels = channels;
 
-  CFRelease( msg );
-  CFRelease( arg );
+  //CFRelease( msg );
+  //CFRelease( arg );
   
   return 1;
 }
@@ -175,19 +234,24 @@ void devDown( void *device ) {
   exitOnError( AMDeviceDisconnect(device), "Disconnect Device" );
 }
 
-char service__send( serviceT *self, CFTypeRef msg, tBASE * aux, uint8_t flags ) {
+//char service__send( serviceT *self, CFTypeRef msg, tBASE * aux, uint8_t flags ) {
+char service__send( serviceT *self, char *msg, tBASE *aux, uint8_t flags ) {
   channelT *chan = channel__new( self->service, self->secure, 0 );
   return channel__send( chan, msg, aux, flags );
 }
 
-char service__recv( serviceT *self, CFTypeRef *msg, CFArrayRef *aux ) {
+//char service__recv( serviceT *self, CFTypeRef *msg, CFArrayRef *aux ) {
+char service__recv( serviceT *self, tBASE **msg, tARR **aux ) {
   channelT *chan = channel__new( self->service, self->secure, 0 );
   return channel__recv( chan, msg, aux );
 }
 
+//char service__call( serviceT *self, 
+//    const char *method, tBASE * args, uint8_t flags,
+//    CFTypeRef *msgOut, CFArrayRef *auxOut ) {
 char service__call( serviceT *self, 
     const char *method, tBASE * args, uint8_t flags,
-    CFTypeRef *msgOut, CFArrayRef *auxOut ) {
+    tBASE **msgOut, tARR **auxOut ) {
   channelT *chan = channel__new( self->service, self->secure, 0 );
   channel__send( chan, method, args, flags );
   return channel__recv( chan, msgOut, auxOut );

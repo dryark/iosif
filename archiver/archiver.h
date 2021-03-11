@@ -1,85 +1,19 @@
 #ifndef __ARCHIVER_H
 #define __ARCHIVER_H
 
-#include "bytearr.h"
-
-#define xfI8 1
-#define xfI16 2
-#define xfI32 3
-#define xfSTR 4
-#define xfARR 5
-#define xfDICT 6
-#define xfARCID 7
-#define xfOBS 8
-#define xfREF 9
-#define xfBOOL 10
-
-struct tBASE_t {
-  uint8_t type;
-  struct tBASE_t *next;
-};
-typedef struct tBASE_t tBASE;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  uint32_t val;
-} tI32;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  char *val;
-} tSTR;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  uint8_t len;
-  tBASE *head;
-  tBASE *tail;
-} tARR;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  uint8_t len;
-  tBASE *head;
-  tBASE *tail;
-  int num;
-} tOBS;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  tBASE *keyHead;
-  tBASE *keyTail;
-  tBASE *valHead;
-  tBASE *valTail;
-} tDICT;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  uint32_t val;
-} tARCID;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  tBASE *val;
-} tREF;
-
-typedef struct {
-  uint8_t type;
-  tBASE *next;
-  uint8_t val;
-} tBOOL;
+#include"types.h"
+#include "../bytearr.h"
 
 tBOOL * tBOOL__new( uint8_t val );
+tNULL * tNULL__new();
 
 #define tDICT__set( a,b,c ) _tDICT__set( a,b, (tBASE *) c )
 void _tDICT__set( tDICT *self, char *key, tBASE *val );
+
+#define tDICT__seto( a,b,c ) _tDICT__seto( a,(tBASE *) b, (tBASE *) c )
+void _tDICT__seto( tDICT *self, tBASE *key, tBASE *val );
+
+tBASE *tDICT__get( tDICT *self, char *key );
 
 tDICT *tDICT__newPairs( int count, ... );
 
@@ -91,6 +25,9 @@ void tBASE__dump( tBASE *ob, uint8_t depth );
 #define tARR__add( a,b) _tARR__add( a, (tBASE *) b )
 void _tARR__add( tARR *self, tBASE *ob );
 
+void **tARR__flatten( tARR *self );
+tBASE *tARR__get( tARR *self, uint32_t pos );
+
 tARR *tARR__newVals( int count, ... );
 tARR *tARR__newStrs( int count, ... );
 
@@ -100,14 +37,29 @@ void tBASE__xml( tBASE *ob, bytearr *ba, uint8_t depth );
 #define tBASE__del( a ) _tBASE__del( (tBASE *) a )
 void _tBASE__del( tBASE *self );
 
+#define tBASE__dup( a ) _tBASE__dup( (tBASE *) a )
+tBASE *_tBASE__dup( tBASE *self );
+
 void tOBS__dump( tOBS *self, uint8_t depth );
 
 #define tOBS__new( a ) _tOBS__new( (tBASE *) a )
 tOBS *_tOBS__new( tBASE *root );
 
 tSTR *tSTR__new( char *val );
+tSTR *tSTR__newl( char *val, int len );
+tI8 *tI8__new( uint8_t val );
+tI16 *tI16__new( uint16_t val );
 tI32 *tI32__new( uint32_t val );
+tI64 *tI64__new( int64_t val );
+tTIME *tTIME__new( double val );
 tARR *tARR__new();
+tARCID *tARCID__new( uint32_t val );
+tDICT *tDICT__new();
+tBASE *tREF__new( tBASE *val );
+tF1 *tF1__new( float val );
+tF2 *tF2__new( double val );
+tDATA *tDATA__new( uint8_t *val, uint32_t len );
+uint32_t tI__val32( tBASE *self );
 
 void tARR__del( tARR *self );
 

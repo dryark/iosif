@@ -2,9 +2,9 @@
 // Anti-Corruption License
 
 #include"bytearr.h"
-#include"nsutil.h"
+#include"archiver/nsutil.h"
 #include"cfutil.h"
-#include"archiver.h"
+#include"archiver/archiver.h"
 
 bytechunk *bytechunk__new( uint8_t *data, uint32_t len, char alloc ) {
   bytechunk *self = (bytechunk *) malloc( sizeof( bytechunk ) );
@@ -93,12 +93,23 @@ void bytearr__auxi64( bytearr *self, int64_t val ) {
   bytearr__appendi64( self, val );
 }
 
-void bytearr__auxcf( bytearr *self, CFTypeRef cf, char secure ) {
+/*void bytearr__auxcf( bytearr *self, CFTypeRef cf, char secure ) {
   bytearr__appendi32( self, 10 ); // empty dict
   bytearr__appendi32( self, 2 ); // cfTypeRef
   
   int len = 0;
   uint8_t *data = cf2archive( cf, &len, secure );
+  
+  bytearr__appendi32( self, len );
+  bytearr__append( self, data, len, 1 );
+}*/
+
+void bytearr__auxT( bytearr *self, tBASE *t ) {
+  bytearr__appendi32( self, 10 ); // empty dict
+  bytearr__appendi32( self, 2 ); // cfTypeRef
+  
+  uint32_t len = 0;
+  uint8_t *data = tBASE__archive( t, &len );
   
   bytearr__appendi32( self, len );
   bytearr__append( self, data, len, 1 );
@@ -130,7 +141,7 @@ uint8_t *bytearr__asaux( bytearr *self, uint32_t *len ) {
   return bytes;
 }
 
-bytearr *cfarr2aux( CFTypeRef argsCf, char secure ) {
+/*bytearr *cfarr2aux( CFTypeRef argsCf, char secure ) {
   bytearr *args = bytearr__new();
   if( iscfarr( argsCf ) ) {
     int count = CFArrayGetCount( (CFArrayRef) argsCf );
@@ -153,6 +164,34 @@ bytearr *cfarr2aux( CFTypeRef argsCf, char secure ) {
   }
   else {
     bytearr__auxcf( args, argsCf, secure );
+  }
+  return args;
+}*/
+
+bytearr *tarr2aux( tARR *argsT ) {
+  bytearr *args = bytearr__new();
+  if( argsT->type == xfARR ) {
+    int count = argsT->count;
+    //printf("Count = %i\n", count );
+    for( int i=0;i<count;i++ ) {
+      tBASE *el = tARR__get( argsT, i );
+      if( el->type -= xfI8 ) {
+        bytearr__auxi32( args, ( (tI8 *) el )->val );
+      }
+      else if( el->type == xfI16 ) {
+        bytearr__auxi32( args, ( (tI16 *) el )->val );
+      }
+      else if( el->type == xfI32 ) {
+        bytearr__auxi32( args, ( (tI32 *) el )->val );
+      }
+      else if( el->type == xfI64 ) {
+        bytearr__auxi64( args, ( (tI64 *) el )->val );
+      }
+      else bytearr__auxT( args, el );
+    }
+  }
+  else {
+    bytearr__auxT( args, (tBASE *) argsT );
   }
   return args;
 }

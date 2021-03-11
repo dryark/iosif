@@ -39,7 +39,9 @@ void runInfo( void *device ) {
         if( useJson ) {
           printf("%s:",name);
           cfdump( 1, val );
-          printf(",\n");
+          if( i != g_cmd->argc-1 ) {
+            printf(",\n");
+          }
         }
         else {
           if( g_cmd->argc>1) printf("%s:",name);

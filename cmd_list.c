@@ -45,7 +45,7 @@ void runList( void *device ) {
   CFStringRef devId = AMDeviceCopyDeviceIdentifier( device );
   char *udid = str_cf2c( devId );
   if( g_json ) {
-    printf("[udid:\"%s\"],\n", udid );
+    printf("{udid:\"%s\"},\n", udid );
   } else {
     fprintf(stderr,"udid:%s\n", udid );
   }
