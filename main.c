@@ -55,7 +55,7 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "log",          "Syslog",                      &run_syslog,       udid_option );
   uclop__addcmd( opts, "list",         "List Devices",                &run_list,         opts_list );
   uclop__addcmd( opts, "detectloop",   "Detect Loop",                 &run_detect,       0 );
-  uclop__addcmd( opts, "img",          "Get screenshot",              &run_img,          0 );
+  uclop__addcmd( opts, "img",          "Get screenshot",              &run_img,          udid_option );
   uclop__addcmd( opts, "gas",          "Gas Guage",                   &run_gg,           0 );
   uclop__addcmd( opts, "syscfg",       "Get SysCfg",                  &run_syscfg,       0 );
   uclop__addcmd( opts, "ps",           "Process list",                &run_ps,           opts_ps );

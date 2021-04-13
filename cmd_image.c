@@ -171,6 +171,8 @@ void runIServer( void *device ) {
 #endif
 
 void runImage( void *device ) {
+  if( !desired_device( device, g_cmd ) ) return;
+  
   void *imgService = initScreenshotService( device );
   
   size_t imgLen;
