@@ -31,6 +31,13 @@ serviceT *service__new_instruments( void *device ) {
   return self;
 }
 
+serviceT *service__new_afc( void *device ) {
+  serviceT *self = service__new( device,
+    "com.apple.afc",
+    NULL );
+  return self;
+}
+
 serviceT *service__new_testmanagerd( void *device ) {
   serviceT *self = service__new( device,
     "com.apple.testmanagerd.lockdown",

@@ -32,6 +32,14 @@ extern int AMDeviceSecureUninstallApplication( void *service, void * dunno, CFSt
 
 extern int AMDeviceLookupApplications( void *device, CFDictionaryRef options, CFDictionaryRef *dictOut );
 
+extern int AMDeviceCreateHouseArrestService(void *device, CFStringRef bundleIDRef, CFDictionaryRef optionsRef, void **ptr);
+
+extern int AFCFileRefOpen( void *afc, const char *path, unsigned long long mode, unsigned long long *ref);
+extern int AFCFileRefSeek( void *afc, unsigned long long ref, unsigned long long offset1, unsigned long long offset2);
+extern int AFCFileRefRead( void *afc, unsigned long long ref, void *buf, size_t *len);
+extern int AFCFileRefSetFileSize( void *afc, unsigned long long ref, unsigned long long offset);
+extern int AFCFileRefWrite( void *afc, unsigned long long ref, const void *buf, size_t len);
+extern int AFCFileRefClose( void *afc, unsigned long long ref);
 
 typedef struct muxListenIn_s muxListenIn;
 typedef struct muxListenOut_s muxListenOut;

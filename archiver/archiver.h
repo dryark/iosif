@@ -60,6 +60,8 @@ tF1 *tF1__new( float val );
 tF2 *tF2__new( double val );
 tDATA *tDATA__new( uint8_t *val, uint32_t len );
 uint32_t tI__val32( tBASE *self );
+int64_t tI__val64( tBASE *self );
+char tIsnum( tBASE *self );
 
 void tARR__del( tARR *self );
 

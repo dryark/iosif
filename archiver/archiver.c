@@ -314,6 +314,26 @@ uint32_t tI__val32( tBASE *self ) {
   }
   return val;
 }
+
+int64_t tI__val64( tBASE *self ) {
+  int64_t val;
+  switch( self->type ) {
+  case xfI8: val=( ( (tI8*) self ) )->val; break;
+  case xfI16: val=( ( (tI16*) self ) )->val; break;
+  case xfI32: val=( ( (tI32*) self ) )->val; break;
+  case xfI64: val=( ( (tI64*) self ) )->val; break;
+  }
+  return val;
+}
+
+char tIsnum( tBASE *self ) {
+  switch( self->type ) {
+  case xfI8: case xfI16: case xfI32: case xfI64:
+    return 1;
+  }
+  return 0;
+}
+
 void tI8__dump( tI8 *self, uint8_t depth ) {
   printf("%u\n", self->val );
 }

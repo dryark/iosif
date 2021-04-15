@@ -11,11 +11,13 @@
 #include"cmd_bytetest.h"
 #include"cmd_syscfg.h"
 #include"cmd_info.h"
+#include"cmd_file.h"
 #include"cmd_gg.h"
 #include"cmd_mg.h"
 #include"cmd_img.h"
 #include"cmd_list.h"
 #include"cmd_listapps.h"
+#include"cmd_process.h"
 #include"cmd_syslog.h"
 #include"service_deviceinfo.h"
 #include"service_notifications.h"
@@ -70,6 +72,9 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "install",      "Install Application",         &run_install,      opts_install );
   uclop__addcmd( opts, "listapps",     "List Applications",           &run_listapps,     opts_listapps );
   uclop__addcmd( opts, "version",      "Version",                     &run_version,      0 );
+  uclop__addcmd( opts, "dl",           "Download file",               &run_getfile,      udid_option );
+  uclop__addcmd( opts, "launch",       "Launch app",                  &run_launch,       udid_option );
+  uclop__addcmd( opts, "kill",         "Kill process",                &run_kill,         udid_option );
   #ifdef NNG
   uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
   #endif

@@ -13,4 +13,5 @@ void *activateDiagService(       void *device );
 serviceT *service__new_instruments( void *device );
 serviceT *service__new_testmanagerd( void *device );
 serviceT *service__new_remoteautomation( void *device );
+serviceT *service__new_afc( void *device );
 #endif
