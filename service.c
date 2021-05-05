@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #include"service.h"
 #include"cfutil.h"
 #include"uclop.h"
@@ -6,6 +9,8 @@ int g_chan_id = 0;
 
 serviceT *service__new( void *device, char *name, char *secureName ) {
   serviceT *self = (serviceT *) malloc( sizeof( serviceT ) );
+  self->nextChanId = 1;
+  self->channels = NULL;
   
   devUp( device );
   int err = AMDeviceSecureStartService( device, str_c2cf( name ), NULL, &(self->service) );
@@ -28,15 +33,11 @@ serviceT *service__new( void *device, char *name, char *secureName ) {
 }
 
 channelT *service__connect_channel( serviceT *service, char *name ) {
-  // testmanagerd uses hidden channels :(
-  //if( !CFDictionaryContainsKey( service->channels, str_c2cf(name) ) ) {
-  if( !tDICT__get( service->channels, name ) ) {
-    fprintf( stderr, "channel %s not in list\n", name );
-    return NULL;
-  }
-  //printf("Channel in list\n");
+  return service__connect_channel_int( service, name, 0 );
+}
 
-  int code = ++g_chan_id;
+channelT *channel__connect_channel_int( channelT *channel, char *name, char skipRecv ) {
+  int code = channel->serviceOb->nextChanId++;
 
   #ifdef DEBUG
   printf("Connecting channel %s to code %d\n", name, code );
@@ -44,7 +45,63 @@ channelT *service__connect_channel( serviceT *service, char *name ) {
   
   tARR *args = tARR__newVals( 2,
     tI32__new( code ),
-    tSTR__new(name)
+    tSTR__new( name )
+  );
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
+  
+  if( !channel__send( channel, "_requestChannelWithCode:identifier:", (tBASE *) args, SEND_HASREPLY ) ) {
+    printf("Could not send channel request\n");
+    return NULL;
+  }
+  if( !channel__recv( channel, &msg, NULL ) ) {
+    printf("No response to connect channel\n");
+    return NULL;
+  }
+  if( !channel__recv( channel, &msg, NULL ) ) {
+    printf("No response to connect channel\n");
+    return NULL;
+  }
+  
+  if( msg ) {
+    fprintf( stderr, "Error: _requestChannelWithCode:identifier: returned %s\n", cftype(msg) );
+    //cfdump( 0, msg );
+    tBASE__dump( msg, 1 );
+    
+    //CFRelease( msg );
+    return NULL;
+  }
+  
+  #ifdef DEBUG
+  printf("  Successful\n");
+  #endif
+  
+  channelT *chan = channel__new( channel->service, channel->secure, code );
+  chan->serviceOb = channel->serviceOb;
+  
+  if( !skipRecv ) channel__recv( chan, &msg, NULL );
+  
+  return chan;
+}
+
+channelT *service__connect_channel_int( serviceT *service, char *name, char skipRecv ) {
+  // testmanagerd uses hidden channels :(
+  //if( !CFDictionaryContainsKey( service->channels, str_c2cf(name) ) ) {
+  if( service->channels && !tDICT__get( service->channels, name ) ) {
+    fprintf( stderr, "channel %s not in list\n", name );
+    //return NULL;
+  }
+  //printf("Channel in list\n");
+
+  int code = service->nextChanId++;
+
+  #ifdef DEBUG
+  printf("Connecting channel %s to code %d\n", name, code );
+  #endif
+  
+  tARR *args = tARR__newVals( 2,
+    tI32__new( code ),
+    tSTR__new( name )
   );
   //CFTypeRef msg = NULL;
   tBASE *msg = NULL;
@@ -72,10 +129,97 @@ channelT *service__connect_channel( serviceT *service, char *name ) {
   #endif
   
   channelT *chan = channel__new( service->service, service->secure, code );
+  chan->serviceOb = service;
   
-  channel__recv( chan, &msg, NULL );
+  if( !skipRecv ) channel__recv( chan, &msg, NULL );
   
   return chan;
+}
+
+char channel__handshake( channelT *self ) {
+  tDICT *caps = tDICT__newPairs( 4,
+    "com.apple.private.DTXConnection", tI8__new( 1 ),
+    "com.apple.private.DTXBlockCompression", tI8__new( 2 )
+  );
+    
+  //printf("Handshake msgId:%i\n", cur_message + 1 );
+  
+  if( !channel__send( self, "_notifyOfPublishedCapabilities:", (tBASE *) caps, SEND_HASREPLY ) ) {
+    printf("Service handshake failed\n");
+    return false;
+  }
+  
+  #ifdef DEBUG2
+  printf("Sent handshake\n");
+  #endif
+  
+  //CFRelease( caps );
+
+  //CFTypeRef msg = NULL;
+  tBASE *msg = NULL;
+  
+  //CFArrayRef arg = NULL;
+  tARR *arg = NULL;
+
+  if( !channel__recv( self, &msg, &arg ) || !msg || !arg ) {
+    fprintf(stderr, "recvDtxMessage failed:\n");
+    return 0;
+  }
+  
+  #ifdef DEBUG
+  printf("Handshake response: ");
+  //cfdump( 1, msg );
+  tBASE__dump( msg, 1 );
+  #endif
+    
+  do {
+    if( msg->type != xfSTR ) {
+      fprintf( stderr, "Handshake response isn't a message: %d\n", msg->type );
+      break;
+    }
+    tSTR *msgT = (tSTR *) msg;
+    if( strcmp( msgT->val, "_notifyOfPublishedCapabilities:" ) ) {
+      fprintf(stderr, "Handshake response is wrong: %s\n", cftype(msg) );
+      break;
+    }
+
+    if( arg->type != xfARR ) {
+      fprintf(stderr,"handshake arg response is not an array; is: %d\n", arg->type );
+      break;
+    }
+    
+    if( arg->count != 1 ) {
+      fprintf(stderr,"handshake arg response is not an array of len 1; len is: %d\n", arg->count );
+      break;
+    }
+    
+    
+  }
+  while( false );
+  
+  //CFRelease( msg );
+  //CFRelease( arg );
+  
+  return 1;
+}
+
+char service__handshake2( serviceT *self ) {
+  tBASE *msg = NULL;
+  tARR *arg = NULL;
+
+  if( !service__recv( self, &msg, &arg ) || !msg || !arg ) {
+    fprintf(stderr, "handshake receive failed:\n");
+    return 0;
+  }
+  
+  #ifdef DEBUG
+  printf("Handshake response msg: ");
+  if( msg ) tBASE__dump( msg, 1 );
+  printf("Handshake response arg: ");
+  if( arg ) tBASE__dump( (tBASE *) arg, 1 );
+  #endif
+    
+  return 1;
 }
 
 char service__handshake( serviceT *self ) {

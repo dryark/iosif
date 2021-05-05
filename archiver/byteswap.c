@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// MIT License
+
 #include<stdint.h>
 uint16_t bswap_u16( uint16_t v ) { return (v << 8) | (v >> 8 ); }
 int16_t  bswap_i16(  int16_t  v ) { return (v << 8) | ((v >> 8) & 0xFF); }

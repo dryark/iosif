@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #ifndef __SERVICE_H
 #define __SERVICE_H
 
@@ -8,6 +11,7 @@
 #include"archiver/archiver.h"
 
 typedef struct {
+  int nextChanId;
   void *service;
   char secure;
   //CFDictionaryRef channels;
@@ -15,9 +19,11 @@ typedef struct {
 } serviceT;
 
 typedef struct {
+  int nextMsgId;
   void *service;
   char secure;
   int channel;
+  serviceT *serviceOb;
 } channelT;
 
 #define SEND_HASREPLY 1
@@ -25,14 +31,20 @@ typedef struct {
 
 serviceT *service__new( void *device, char *name, char *secureName );
 channelT *service__connect_channel( serviceT *service, char *name );
+channelT *service__connect_channel_int( serviceT *service, char *name, char skipRecv );
+channelT *channel__connect_channel_int( channelT *channel, char *name, char skipRecv );
 char service__handshake( serviceT *self );
+char channel__handshake( channelT *self ) ;
+char service__handshake2( serviceT *self );
 
 channelT *channel__new( void *service, char secure, int id );
 char channel__send( channelT *chan, const char *method, tBASE *args, uint8_t flags );
 char channel__send_withid( channelT *self, const char *method, tBASE *args, uint8_t flags, uint32_t id );
+char channel__reply( channelT *self, tBASE *argsT, uint32_t id, int convIndex );
 
 //char channel__recv( channelT *self, CFTypeRef *msgOut, CFArrayRef *argOut );
 char channel__recv( channelT *self, tBASE **msgOut, tARR **argOut );
+char channel__recv_withid( channelT *self, tBASE **msgOut, tARR **argOut, int *idout, int *convIndexOut, int *channeOut );
 
 //char channel__call( channelT *chan, const char *method, tBASE *args,
 //    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut );

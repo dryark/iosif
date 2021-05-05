@@ -1,5 +1,6 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+
 #ifndef __CFUTIL_H
 #define __CFUTIL_H
 #include<CoreFoundation/CoreFoundation.h>
@@ -44,7 +45,7 @@ tBASE *deserialize2t( const uint8_t *buf, size_t bufsize );
 
 uint32_t crc32( uint32_t crc, const char *buf, size_t len );
 
-char *strArchive( const char *str, int *strLen );
+char *strArchive( const char *str, uint32_t *strLen );
 
 void dumparchive( const uint8_t *data, uint32_t len );
 

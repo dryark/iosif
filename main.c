@@ -19,9 +19,11 @@
 #include"cmd_listapps.h"
 #include"cmd_process.h"
 #include"cmd_syslog.h"
+#include"cmd_dtxdump.h"
 #include"service_deviceinfo.h"
 #include"service_notifications.h"
 #include"service_sysmon.h"
+#include"service_testmanager.h"
 
 void run_version( ucmd *cmd ) {
   printf("1.0\n");
@@ -75,6 +77,10 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "dl",           "Download file",               &run_getfile,      udid_option );
   uclop__addcmd( opts, "launch",       "Launch app",                  &run_launch,       udid_option );
   uclop__addcmd( opts, "kill",         "Kill process",                &run_kill,         udid_option );
+  uclop__addcmd( opts, "sysinfo",      "System information",          &run_sysinfo,      udid_option );
+  uclop__addcmd( opts, "wda",          "WDA",                         &run_wda,          udid_option );
+  uclop__addcmd( opts, "dd",           "Dtx Dump Parser",             &run_dtxdump,      0);
+  uclop__addcmd( opts, "ddf",          "Dump Dtx Folders",            &run_dtxdumpfolder, 0);
   #ifdef NNG
   uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
   #endif

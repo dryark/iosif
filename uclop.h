@@ -1,6 +1,7 @@
 // Copyright (c) 2021 David Helkowski
 // github.com/nanoscopic/uclop
 // Anti-Corruption License
+
 #ifndef __UCLOP_H
 #define __UCLOP_H
 #define UOPT(a,b) uopt__new(a,b,1,0)

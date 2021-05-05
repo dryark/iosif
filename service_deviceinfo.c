@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #include<CoreFoundation/CoreFoundation.h>
 #include"bytearr.h"
 #include<unistd.h>
@@ -13,6 +16,7 @@ void runSmCoalList(   void *device );
 void runMachTimeInfo( void *device );
 void runLs(           void *device );
 void runPs(           void *device );
+void runSysInfo(      void *device );
 
 void run_ls(           ucmd *cmd ) { g_cmd = cmd; waitForConnect( runLs           ); }
 void run_ps(           ucmd *cmd ) { g_cmd = cmd; waitForConnect( runPs           ); }
@@ -20,6 +24,23 @@ void run_smProcList(   ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSmProcList 
 void run_smSysList(    ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSmSysList    ); }
 void run_smCoalList(   ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSmCoalList   ); }
 void run_machTimeInfo( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runMachTimeInfo ); }
+void run_sysinfo(      ucmd *cmd ) { g_cmd = cmd; waitForConnect( runSysInfo      ); }
+
+void runSysInfo( void *device ) {
+  if( !desired_device( device, g_cmd ) ) return;
+  serviceT *service = service__new_instruments( device );
+  channelT *chan = service__connect_channel( service, "com.apple.instruments.server.services.deviceinfo" );
+  
+  tBASE *ref;
+  channel__call( chan,
+    "systemInformation", NULL, 0,
+    &ref, NULL
+  );
+  tBASE__dump( ref, 1 );
+  
+  service__del( service );
+  exit(0);
+}
 
 void runSmProcList( void *device ) {
   if( !desired_device( device, g_cmd ) ) return;
@@ -223,7 +244,7 @@ void runPs( void *device ) {
       else           nameT = (tSTR *) tDICT__get( dict, "realAppName" );
       if( nameT->type == xfREF ) nameT = (tSTR *) ( (tREF *) nameT )->val;
       
-      char *name = nameT->val;
+      const char *name = nameT->val;
       tBASE *pidT = tDICT__get( dict, "pid" );
       if( pidT->type == xfREF ) pidT = (tBASE *) ( (tREF *) pidT )->val;
       

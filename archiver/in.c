@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #include"archiver.h"
 #include"unarchiver.h"
 #include"nsutil.h"

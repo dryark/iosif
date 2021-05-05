@@ -5,6 +5,7 @@
 #include"archiver/nsutil.h"
 #include"cfutil.h"
 #include"archiver/archiver.h"
+#include"archiver/plist.h"
 
 bytechunk *bytechunk__new( uint8_t *data, uint32_t len, char alloc ) {
   bytechunk *self = (bytechunk *) malloc( sizeof( bytechunk ) );
@@ -31,8 +32,16 @@ void ba__print( bytearr *self, char *fmt, ... ) {
   bytearr__append( self, (uint8_t *) data, len, 0 );
 }
 
+void bytearr__appdup( bytearr *self, uint8_t *data, uint32_t len ) {
+  uint8_t *dup = (uint8_t *) malloc( len );
+  memcpy( dup, data, len );
+  bytearr__append( self, dup, len, 1 );
+}
+
 void bytearr__append( bytearr *self, uint8_t *data, uint32_t len, char alloc ) {
   //printf("Appending %i bytes\n", len );
+  self->len += len;
+  
   bytechunk *chunk = bytechunk__new( data, len, alloc );
   if( !self->head ) {
     self->head = self->tail = chunk;
@@ -48,9 +57,46 @@ void bytearr__append( bytearr *self, uint8_t *data, uint32_t len, char alloc ) {
   oldtail->next = chunk;
 }
 
+void bytearr__appendba( bytearr *self, bytearr *toadd ) {
+  self->len += toadd->len;
+  
+  if( !self->head ) {
+    self->head = toadd->head;
+    self->tail = toadd->tail;
+    return;
+  }
+  if( self->head == self->tail ) {
+    self->head->next = toadd->head;
+    self->tail = toadd->tail;
+    return;
+  }
+  self->tail->next = toadd->head;
+  self->tail = toadd->tail;
+}
+
+void bytearr__appendu8( bytearr *self, uint8_t num ) {
+  uint8_t *nump = (uint8_t *) malloc(2);
+  *nump = num;
+  bytearr__append( self, (uint8_t *) nump, 1, 1 );
+}
+
+void bytearr__appendu16( bytearr *self, uint16_t num ) {
+  uint16_t *nump = (uint16_t *) malloc(2);
+  *nump = num;
+  bytearr__append( self, (uint8_t *) nump, 2, 1 );
+}
+
+
 void bytearr__appendi32( bytearr *self, int32_t num ) {
   //printf("Appending i32 %i\n", num );
   int32_t *nump = (int32_t *) malloc(4);
+  *nump = num;
+  bytearr__append( self, (uint8_t *) nump, 4, 1 );
+}
+
+void bytearr__appendu32( bytearr *self, uint32_t num ) {
+  //printf("Appending i32 %i\n", num );
+  uint32_t *nump = (uint32_t *) malloc(4);
   *nump = num;
   bytearr__append( self, (uint8_t *) nump, 4, 1 );
 }
@@ -109,7 +155,7 @@ void bytearr__auxT( bytearr *self, tBASE *t ) {
   bytearr__appendi32( self, 2 ); // cfTypeRef
   
   uint32_t len = 0;
-  uint8_t *data = tBASE__archive( t, &len );
+  uint8_t *data = tBASE__archivebin( t, &len );
   
   bytearr__appendi32( self, len );
   bytearr__append( self, data, len, 1 );
@@ -174,8 +220,9 @@ bytearr *tarr2aux( tARR *argsT ) {
     int count = argsT->count;
     //printf("Count = %i\n", count );
     for( int i=0;i<count;i++ ) {
+      //printf("Item %i\n", i );
       tBASE *el = tARR__get( argsT, i );
-      if( el->type -= xfI8 ) {
+      if( el->type == xfI8 ) {
         bytearr__auxi32( args, ( (tI8 *) el )->val );
       }
       else if( el->type == xfI16 ) {

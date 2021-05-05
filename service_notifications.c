@@ -1,5 +1,6 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+
 #include<CoreFoundation/CoreFoundation.h>
 #include"bytearr.h"
 #include<unistd.h>

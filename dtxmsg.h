@@ -1,3 +1,8 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
+#ifndef __DTXMSG_H
+#define __DTXMSG_H
 typedef struct {
   uint32_t magic;
   uint32_t size; // 4
@@ -6,7 +11,7 @@ typedef struct {
   uint32_t length; // 12
   uint32_t id; // 16
   uint32_t conversationIndex ; // 20
-  uint32_t channelCode; // 24
+  int32_t channelCode; // 24
   uint32_t expectsReply; // 28
 } dtxmsg;
 
@@ -19,3 +24,4 @@ typedef struct {
 
 dtxmsg *dtxmsg__new( int channel, uint32_t id, char expectsReply, uint32_t length );
 dtxpayload *dtxpayload__new( char expectsReply, uint32_t auxlen, uint64_t totlen );
+#endif

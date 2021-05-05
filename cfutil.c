@@ -308,7 +308,7 @@ tARR *deserialize2t( const uint8_t *buf, size_t bufsize ) {
       case 5: ref = (tBASE *) tI32__new( *( (int32_t *) pos ) ); length = 4; break; // i32
 
       case 4:
-      case 6: ref = (tBASE *) tI64__new( *( (int64_t *) pos ) ); length = 4; break; // i32
+      case 6: ref = (tBASE *) tI64__new( *( (int64_t *) pos ) ); length = 8; break; // i32
 
       case 10: continue; //ref = kCFNull; length = 0; break; // null
 
@@ -426,7 +426,7 @@ uint32_t crc32( uint32_t crc, const char *buf, size_t len ) {
 }
 
 // Lazy mans NSKeyedArchiver
-char *strArchive( const char *str, int *strLen ) {
+char *strArchive( const char *str, uint32_t *strLen ) {
   // Initial <?xml...?>, DOCTYPE, and surrounding <plist> can all be dropped
   const char prefix[] =
   "<dict>"
@@ -438,7 +438,7 @@ char *strArchive( const char *str, int *strLen ) {
   //"  <integer>0x186a0</integer>" // You can write integers in hex format. For lulz.
   "</dict>";
   
-  int totLen = sizeof( prefix ) + strlen(str) + sizeof( suffix ) - 2;
+  uint32_t totLen = sizeof( prefix ) + strlen(str) + sizeof( suffix ) - 2;
   char *res = malloc( totLen + 1 );
   *strLen = totLen;
   sprintf( res, "%s%s%s", prefix, str, suffix );

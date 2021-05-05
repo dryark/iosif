@@ -1,15 +1,11 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #ifndef __UNARCHIVER_H
 #define __UNARCHIVER_H
 #include<stdint.h>
+#include"ptrarr.h"
 #include"archiver.h"
-
-struct ptrArr_t {
-  uint16_t max;
-  uint16_t count;
-  void **ptr;
-  struct ptrArr_t *next;
-};
-typedef struct ptrArr_t ptrArr;
 
 typedef struct {
   uint8_t scan;
@@ -28,4 +24,7 @@ typedef struct {
 
 bpList *bpList__new( uint8_t *data, int len );
 tBASE *dearchive( uint8_t *data, uint32_t len );
+
+#define asBASE (tBASE *)
+
 #endif

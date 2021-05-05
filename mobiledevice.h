@@ -4,6 +4,7 @@
 
 #ifndef __MOBILEDEVICE_H
 #define __MOBILEDEVICE_H
+//#include<openssl/ssl.h>
 //extern void AMDSetLogLevel(int level);
 extern int         AMDeviceConnect(              void *device );
 extern int         AMDeviceDisconnect(           void *device );
@@ -23,6 +24,7 @@ extern int AMDServiceConnectionReceive(        void *service, char *buf, size_t 
 extern int AMDServiceConnectionSendMessage(    void *service, CFPropertyListRef message, CFPropertyListFormat format);
 extern int AMDServiceConnectionSend(           void *service, const void *message, size_t length);
 extern int AMDServiceConnectionGetSocket(      void *service );
+//extern ??? AMDServiceConnectionGetSecureIOContext( void *service );
 extern int AMDServiceConnectionInvalidate(     void *service );
 
 extern int AMDeviceSecureTransferPath(       int, void *device, CFURLRef, CFDictionaryRef, void *, int);

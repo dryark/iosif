@@ -43,6 +43,23 @@ void killPid( void *device, int64_t pid ) {
   tBASE__dump( msg, 1 );
 }
 
+void startObserving( channelT *chan, int32_t pid ) {
+  tBASE *msg = NULL;
+  
+  //channelT *chan = channel__new_processcontrol( device );
+  
+  channel__send( chan,
+    "startObservingPid:", (tBASE *) tI32__new( pid ),
+    0 //, &msg, NULL
+  );
+  //if( !msg ) {
+  //  //channel__del( chan );
+  //  exit(0);
+  //}
+  
+  //tBASE__dump( msg, 1 );
+}
+
 void runKill( void *device ) {
   if( !desired_device( device, g_cmd ) ) return;
   
@@ -65,6 +82,45 @@ void runLaunch( void *device ) {
   }
   
   exit(0);
+}
+
+uint64_t launchProcess_withchan(
+  void *device,
+  char *bundleIdentifier,
+  tDICT *environment,
+  tARR *arguments,
+  tDICT *options,
+  channelT *chan
+) {
+	tSTR *devicePath = tSTR__new("/private/");
+
+	tARR *args = tARR__newVals( 5,
+	  devicePath,
+	  tSTR__new( bundleIdentifier ),
+	  environment,
+	  arguments,
+	  options );
+	
+	tBASE *msg = NULL;
+  
+  //channelT *chan = channel__new_processcontrol( device );
+  
+  channel__call( chan,
+    "launchSuspendedProcessWithDevicePath:bundleIdentifier:environment:arguments:options:", (tBASE *) args,
+    0, &msg, NULL
+  );
+  if( !msg ) {
+    //channel__del( chan );
+    exit(0);
+  }
+  
+  if( !tIsnum( msg ) ) {
+    fprintf(stderr, "Error launching process\n" );
+    tBASE__dump( msg, 1 );
+    return 0;
+  }
+  
+  return tI__val64( msg );
 }
 
 uint64_t launchProcess(

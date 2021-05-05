@@ -1,5 +1,6 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+
 #include"uclop.h"
 #include"service.h"
 //#include"nsutil.h"

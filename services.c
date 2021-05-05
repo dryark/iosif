@@ -1,5 +1,6 @@
 // Copyright (c) 2021 David Helkowski
 // Anti-Corruption License
+
 #include<CoreFoundation/CoreFoundation.h>
 #include"service.h"
 #include"cfutil.h"
@@ -42,7 +43,7 @@ serviceT *service__new_testmanagerd( void *device ) {
   serviceT *self = service__new( device,
     "com.apple.testmanagerd.lockdown",
     "com.apple.testmanagerd.lockdown.secure" );
-  service__handshake( self );
+  service__handshake2( self );
   return self;
 }
 

@@ -1,2 +1,6 @@
 **~
 iosif
+archiver/in
+archiver/out
+dump*
+.DS_Store

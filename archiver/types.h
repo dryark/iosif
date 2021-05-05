@@ -1,3 +1,6 @@
+// Copyright (c) 2021 David Helkowski
+// Anti-Corruption License
+
 #ifndef __ATYPES_H
 #define __ATYPES_H
 
@@ -19,6 +22,10 @@
 #define xfF1 14
 #define xfF2 15
 #define xfDATA 16
+#define xfUUID 17
+#define xfCAPS 18
+#define xfURL 19
+#define xfTESTCONF 20
 
 struct tBASE_t {
   uint8_t type;
@@ -70,7 +77,7 @@ typedef struct {
 
 typedef struct {
   BASEINFO
-  char *val;
+  const char *val;
 } tSTR;
 
 typedef struct {
@@ -88,6 +95,19 @@ typedef struct {
   int num;
 } tOBS;
 
+struct tOFF_t {
+  struct tOFF_t *next;
+  uint16_t offset;
+};
+typedef struct tOFF_t tOFF;
+
+typedef struct {
+  uint16_t len;
+  tOFF *head;
+  tOFF *tail;
+  int num;
+} tOFFS;
+
 typedef struct {
   BASEINFO
   int count;
@@ -96,6 +116,16 @@ typedef struct {
   tBASE *valHead;
   tBASE *valTail;
 } tDICT;
+
+typedef struct {
+  BASEINFO
+  tDICT *dict;
+} tCAPS;
+
+typedef struct {
+  BASEINFO
+  tDICT *dict;
+} tTESTCONF;
 
 typedef struct {
   uint8_t type;
@@ -116,5 +146,15 @@ typedef struct {
 typedef struct {
   BASEINFO
 } tNULL;
+
+typedef struct {
+  BASEINFO
+  uint8_t val[16];
+} tUUID;
+
+typedef struct {
+  BASEINFO
+  char *relative;
+} tURL;
 
 #endif
