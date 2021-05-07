@@ -239,8 +239,10 @@ void runPs( void *device ) {
         break;
       }
       
+      const char *shortName = shortNameT->val;
+      
       tSTR *nameT;
-      if( nameonly ) nameT = (tSTR *) tDICT__get( dict, "name" );
+      if( nameonly ) nameT = shortNameT;
       else           nameT = (tSTR *) tDICT__get( dict, "realAppName" );
       if( nameT->type == xfREF ) nameT = (tSTR *) ( (tREF *) nameT )->val;
       
@@ -265,11 +267,11 @@ void runPs( void *device ) {
       }
       else continue; // mach_kernel has no startDate... just don't output it
       if( subsec ) {
-        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%.2f },\n", pid, name, unix );
+        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%.2f,\n  name:\"%s\" },\n", pid, name, unix, shortName );
       } 
       else {
         uint32_t unixSec = (uint32_t) unix;
-        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%d },\n", pid, name, unixSec );
+        printf( "{ pid:%" PRIu32 ",\n  path:\"%s\",\n  start:%d,\n  name:\"%s\" },\n", pid, name, unixSec, shortName );
       }
     }
     if( oneApp && !found ) {

@@ -235,12 +235,16 @@ uint8_t bpList__pass1( bpList *self, uint8_t refSize ) {
       
       break;
     case 0b0110: // utf-16
-      printf("unicode str\n");
+      duprintf("unicode str\n");
       if( lower == 0b1111 ) numBytes = readSize( &pos, &err );
       else                  numBytes = lower;
       
-      printf("  len=%d\n", numBytes );
-      pos += numBytes * 2 + 1;
+      duprintf("  len=%d\n", numBytes );
+      
+      duprintf("\"%.*s\"\n", numBytes, pos );
+      
+      ob = asBASE tSTR__newl( (char *) pos, numBytes*2 );
+      pos += numBytes * 2;
       
       break;
     case 0b1000: // uid
@@ -389,6 +393,10 @@ void bpList__pass2( bpList *self, uint8_t refSize ) {
       pos += numBytes;
       break;
     case 0b0110: // utf-16
+      if( lower == 0b1111 ) numBytes = readSize( &pos, &err );
+      else                  numBytes = lower;
+      
+      pos += numBytes*2;
       break;
     case 0b1000: // uid
       pos += lower + 1;

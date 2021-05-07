@@ -81,6 +81,7 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "wda",          "WDA",                         &run_wda,          udid_option );
   uclop__addcmd( opts, "dd",           "Dtx Dump Parser",             &run_dtxdump,      0);
   uclop__addcmd( opts, "ddf",          "Dump Dtx Folders",            &run_dtxdumpfolder, 0);
+  uclop__addcmd( opts, "xtest",        "Xcui test",                   &run_xtest, 0 );
   #ifdef NNG
   uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
   #endif
