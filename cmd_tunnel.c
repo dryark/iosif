@@ -162,7 +162,10 @@ void runTunnel( void *device ) {
   }
     
   fd_set set;
-      
+  
+  printf("Ready\n");
+  fflush(stdout);
+  
   while( 1 ) {
     FD_ZERO( &set );
     int maxFd = 0;
