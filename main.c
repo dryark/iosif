@@ -54,9 +54,13 @@ int main (int argc, char **argv) {
     UOPT("-bi","Bundle Identifier of a specific app to list"),
     idopt, 0
   };
+  uopt *opts_syslog[] = {
+    UOPT_FLAG("-raw","Show all raw results"),
+    idopt, 0
+  };
   
   uclop *opts = uclop__new( 0, 0 );
-  uclop__addcmd( opts, "log",          "Syslog",                      &run_syslog,       udid_option );
+  uclop__addcmd( opts, "log",          "Syslog",                      &run_syslog,       opts_syslog );
   uclop__addcmd( opts, "list",         "List Devices",                &run_list,         opts_list );
   uclop__addcmd( opts, "detectloop",   "Detect Loop",                 &run_detect,       0 );
   uclop__addcmd( opts, "img",          "Get screenshot",              &run_img,          udid_option );

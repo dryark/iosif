@@ -49,7 +49,12 @@ void msg__reset( msg *self ) {
 void msg__parse( msg *self ) {
 }
 
-void msg__output( msg *self, int procCount, char **procs ) {
+void msg__output( msg *self, int procCount, char **procs, char raw ) {
+  if( raw ) {
+    printf("%.*s\n", self->size, self->data );    
+    return;
+  }
+  
   char month[4] = {};
   memcpy( month, self->data, 3 );
   char day[3] = {};
@@ -60,25 +65,47 @@ void msg__output( msg *self, int procCount, char **procs ) {
   //printf("Day:[%s]\n", day );
   //printf("Time:[%s]\n", time );
   
+  // Device name
+  int nameLen;
+  int procStart;
+  int k1;
+  if( self->data[16] == '"' ) {
+    for( k1=17; k1< self->size; k1++ ) {
+      if( self->data[k1] == '"' ) break;
+    }
+    nameLen = k1 - 16 - 1;
+    procStart = k1 + 1;
+  }
+  // 16 "   17 A   18 "
+  
+  else {
+    for( k1=16; k1< self->size; k1++ ) {
+      if( self->data[k1] == ' ' ) break;
+    }
+    nameLen = k1 - 16;
+    procStart = k1 + 1;
+  }
+  // 16 A 17 B 18 " "
+  
   // Process
-  int i=18;
+  int i=procStart;
   for( ;i<self->size;i++ ) {
     if( self->data[i] == ' ' ) break;
   }
   int k;
   int pidEnd = i - 2;
   //printf("pidEnd char: %c\n", self->data[ i - 1 ] );
-  for( k=pidEnd;k>18;k-- ) {
+  for( k=pidEnd;k>procStart;k-- ) {
     if( self->data[k] == '[' ) break;
   }
   k++;
   int pidStart = k;
   int pidLen = pidEnd - pidStart + 1; 
   char *pid = &self->data[pidStart];
-  
+      
   // Process name
-  int procLen = i-18-(pidLen+2);
-  char *proc = &self->data[18];
+  int procLen = i-procStart-(pidLen+2);
+  char *proc = &self->data[procStart];
   
   if( procCount ) {
     int procOk = 0;
@@ -163,7 +190,9 @@ void runSysLog( void *device ) {
   
   char buf[ BUFSIZE ];
   
-  int len, rc;
+  char *raw = ucmd__get( g_cmd, "-raw" );
+   
+  int rc, len;
   while( 1 ) {
     rc = AMDServiceConnectionReceive( service, buf, BUFSIZE-1 );
     if( rc <= 0 ) break;
@@ -174,7 +203,7 @@ void runSysLog( void *device ) {
       if( curmsg->size ) {
         //fwrite( curmsg->data, curmsg->size, 1, stdout );
         //fwrite( "\n", 1, 1, stdout );
-        msg__output( curmsg, procCount, procs );
+        msg__output( curmsg, procCount, procs, raw ? 1 : 0 );
         fflush( stdout );
         msg__reset( curmsg );
       }
