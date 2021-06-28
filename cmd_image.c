@@ -16,10 +16,8 @@ static ucmd *g_cmd = NULL;
 void runImage( void *device );
 void run_img( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runImage ); }
 
-#ifdef NNG
 void runIServer( void *device );
 void run_iserver( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runIServer ); }
-#endif
 
 void fatal( char *str, int rv ) {
   fprintf(stderr,"Err %s ; rv=%d\n", str, rv );
@@ -130,25 +128,27 @@ void runIServer( void *device ) {
     
     //printf("Received %.*s\n", (int) size, buf );
     
-    if( !strncmp( buf, "img", 3 ) ) {
+    if( buf && !strncmp( buf, "img", 3 ) ) {
       char *left = &buf[ 4 ];
       int id = atoi( left );
       printf("id:%d\n", id );
-      if( id <= n ) {
+      /*if( id <= n ) {
         nng_free( buf, size );
-        printf("Duplicate\n");
+        printf("Duplicate; size=%i\n", lastlen);
+        fflush( stdout );
         nng_send( sock, lastdata, lastlen, 0 );
         continue;
-      }
+      }*/
       n = id;
       
       size_t imgLen;
       
-      //printf("Fetching image\n");
+      printf("Fetching image\n");
       void *data = getImage( imgService, &imgLen );
-      //printf("Fetch done\n");
+      printf("Fetch done; got %i\n", imgLen );
+      fflush( stdout );
       
-      if( data ) {
+      if( data && imgLen ) {
         rv = nng_send( sock, data, imgLen, 0 );
         if( lastdata ) free( lastdata );
         lastdata = data;
@@ -157,7 +157,9 @@ void runIServer( void *device ) {
       }
       else {
         fprintf(stderr, "Did not get image\n" );
+        fflush( stderr );
       }
+      
       //nng_send( sock, "test", 5, 0 );
     }
     else {
@@ -168,6 +170,48 @@ void runIServer( void *device ) {
   
   exit(0);
 }
+#else
+#include "sandbird/sandbird.h"
+
+void *imgService;
+static int event_handler(sb_Event *e) {
+  if( e->type == SB_EV_REQUEST ) {
+    size_t imgLen;
+      
+    printf("Fetching image\n");
+    void *data = getImage( imgService, &imgLen );
+    
+    sb_send_status( e->stream, 200, "OK" );
+    sb_send_header( e->stream, "Content-Type", "image/png" );
+    sb_write( e->stream, data, imgLen );
+  }
+  return SB_RES_OK;
+}
+
+void runIServer( void *device ) {
+  if( !desired_device( device, g_cmd ) ) return;
+  
+  imgService = initScreenshotService( device );
+  
+  char *portStr = ucmd__get( g_cmd, "-port" );
+  if( !portStr ) portStr = "8271";
+  
+  sb_Server *srv;
+  sb_Options opt;
+  
+  memset(&opt, 0, sizeof(opt));
+  opt.port = portStr;
+  opt.handler = event_handler;
+  
+  srv = sb_new_server( &opt );
+  
+  for (;;) {
+    sb_poll_server(srv, 200);
+  }
+  
+  sb_close_server(srv);
+}
+  
 #endif
 
 void runImage( void *device ) {
