@@ -52,6 +52,8 @@ void msg__parse( msg *self ) {
 void msg__output( msg *self, int procCount, char **procs, char raw ) {
   if( raw ) {
     printf("%.*s\n", self->size, self->data );    
+    fflush( stdout );
+    self->size = 0;
     return;
   }
   
@@ -110,12 +112,16 @@ void msg__output( msg *self, int procCount, char **procs, char raw ) {
   if( procCount ) {
     int procOk = 0;
     for( int ii=0; ii<procCount; ii++ ) {
+      //printf("Comparing [%.*s] with [%.*s]; i=%i\n", procLen, procs[ii], procLen, proc, ii );
       if( !strncmp( procs[ii], proc, procLen ) ) {
         procOk = 1;
         break;
       }
     }
-    if( !procOk ) return;
+    if( !procOk ) {
+      self->size = 0;
+      return;
+    }
   }
   
   // PID
@@ -147,6 +153,11 @@ void msg__output( msg *self, int procCount, char **procs, char raw ) {
   int bufLen = strlen( buffer );
   printf("*%d%s", bufLen, buffer );
   free( buffer );
+  
+  fflush( stdout );
+  
+  //msg__reset( self );
+  self->size = 0;
 }
 
 void runSysLog( void *device ) {
@@ -165,7 +176,7 @@ void runSysLog( void *device ) {
     }
     
     if( procCount ) {
-      procs = ( char ** ) malloc( sizeof( char * ) );
+      procs = ( char ** ) malloc( sizeof( char * ) * procCount );
       int procI = 0;
       for( int i=0;i<argc;i+=2 ) {
         char *filter = g_cmd->argv[i];
@@ -177,6 +188,7 @@ void runSysLog( void *device ) {
       }
     }
   }
+  //printf("Proc count:%i\n", procCount );
   //exit(0);
   
   CFStringRef devId = AMDeviceCopyDeviceIdentifier( device );
@@ -191,7 +203,7 @@ void runSysLog( void *device ) {
   char buf[ BUFSIZE ];
   
   char *raw = ucmd__get( g_cmd, "-raw" );
-   
+  
   int rc, len;
   while( 1 ) {
     rc = AMDServiceConnectionReceive( service, buf, BUFSIZE-1 );
@@ -204,8 +216,6 @@ void runSysLog( void *device ) {
         //fwrite( curmsg->data, curmsg->size, 1, stdout );
         //fwrite( "\n", 1, 1, stdout );
         msg__output( curmsg, procCount, procs, raw ? 1 : 0 );
-        fflush( stdout );
-        msg__reset( curmsg );
       }
       //len = strlen( &buf[1] );
       msg__append( curmsg, &buf[1], rc-1 );
