@@ -402,6 +402,7 @@ void *watchWda( void *voidArgs ) {
           continue;
         }
         printf("%s", outputStr->val );
+        fflush( stdout );
       }
       else {
         tBASE__dump( msg, 1 );

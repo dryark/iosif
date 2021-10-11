@@ -87,7 +87,7 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "cfa",          "Run ControlFloorAgent",       &run_cfa,          udid_option );
   uclop__addcmd( opts, "dd",           "Dtx Dump Parser",             &run_dtxdump,      0);
   uclop__addcmd( opts, "ddf",          "Dump Dtx Folders",            &run_dtxdumpfolder, 0);
-  uclop__addcmd( opts, "xctest",       "Xcui test",                   &run_xctest, 0 );
+  uclop__addcmd( opts, "xctest",       "Xcui test",                   &run_xctest,       udid_option );
   uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
   uclop__addcmd( opts, "iosversion",   "Get iOS version",             &run_ios_version,  udid_option );
   
