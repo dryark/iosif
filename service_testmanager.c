@@ -448,7 +448,7 @@ void launchTestIos11(
   //dci__initControlSession__protocolVersion( dciChan, 36 );
   
   printf("===== Init control session  =====\n");
-  dci__initiateControlSession__pid__protocolVersion( dciChan, 0, 36 );
+  //dci__initiateControlSession__pid__protocolVersion( dciChan, 0, 36 );
   
   channelT *dciChan2 = service__connect_channel_int( testman2,
     "dtxproxy:XCTestManager_IDEInterface:XCTestManager_DaemonConnectionInterface", 1 );
@@ -500,7 +500,7 @@ void launchTestIos11(
       exit(0);
     }
     
-    if( msg->type == xfSTR ) {
+    if( msg && msg->type == xfSTR ) {
       tSTR *msgSTR = (tSTR *) msg;
       const char *msgc = msgSTR->val;
            

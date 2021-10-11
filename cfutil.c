@@ -277,10 +277,10 @@ typedef struct {
 } dtxAuxHeader;
 
 tARR *deserialize2t( const uint8_t *buf, size_t bufsize ) {
-  //if( bufsize < 16 ) {
-  //  fprintf(stderr, "Error: buffer of size 0x%lx is too small for a serialized array", bufsize);
-  //  return NULL;
-  //}
+  if( bufsize < 16 ) {
+    fprintf(stderr, "Error: buffer of size 0x%lx is too small for a serialized array", bufsize);
+    return NULL;
+  }
   
   tARR *array = tARR__new();
 
