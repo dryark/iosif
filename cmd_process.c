@@ -17,6 +17,9 @@ void run_launch( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runLaunch ); }
 void runKill( void *device );
 void run_kill( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runKill ); }
 
+void runTail( void *device );
+void run_tail( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runTail ); }
+
 channelT *channel__new_processcontrol( void *device ) {
   serviceT *inst = service__new_instruments( device );
   
@@ -58,6 +61,45 @@ void startObserving( channelT *chan, int32_t pid ) {
   //}
   
   //tBASE__dump( msg, 1 );
+}
+
+void runTail( void *device ) {
+  if( !desired_device( device, g_cmd ) ) return;
+  
+  int pid = atoi( g_cmd->argv[0] );
+  
+  channelT *chan = channel__new_processcontrol( device );
+  startObserving( chan, pid );
+  
+  while(1) {
+    tBASE *msg = NULL;
+    tARR *aux = NULL;
+    int msgid = 0;
+    int convIndex = 0;
+    //sleep(1);
+    channel__recv_withid( chan, &msg, &aux, &msgid, &convIndex, NULL );
+    if( msg != NULL ) {
+      tSTR *msgSTR = (tSTR *) msg;
+	    const char *msgc = msgSTR->val;
+      if( !strcmp( msgc, "outputReceived:fromProcess:atTime:" ) ) {
+        tBASE *output = aux->head;
+        tSTR *outputStr = (tSTR *) output;
+        if( strstr( outputStr->val, "Couldn't write values" ) != NULL ) continue;
+        if( !strncmp( outputStr->val, "XCTestOutputBarrier", 19 ) ) {
+          printf("%s", &outputStr->val[19] );
+          continue;
+        }
+        printf("%s", outputStr->val );
+      }
+      else {
+        tBASE__dump( msg, 1 );
+        if( aux != NULL ) {
+          tBASE__dump( (tBASE *) aux, 1 );
+        }
+      }
+    }
+    
+  }
 }
 
 void runKill( void *device ) {

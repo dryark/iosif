@@ -5,6 +5,7 @@
 
 void run_launch( ucmd *cmd );
 void run_kill( ucmd *cmd );
+void run_tail( ucmd *cmd );
 void startObserving( channelT *chan, int32_t pid );
 uint64_t launchProcess(
   void *device,

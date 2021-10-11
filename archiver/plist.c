@@ -101,7 +101,7 @@ void tDATA__plist( tOFFS *offs, bytearr *ba, tDATA *self ) {
     byte |= self->len;
     bytearr__appendu8( ba, byte );
   }
-  bytearr__appdup( ba, (uint8_t *) self->val, self->len );
+  if( self->len ) bytearr__appdup( ba, (uint8_t *) self->val, self->len );
 }
 
 uint8_t *encodeSize( uint32_t val, int *len ) {

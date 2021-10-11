@@ -34,13 +34,14 @@ char channel__send( channelT *chan, const char *method, tBASE *args, uint8_t fla
 //    uint8_t flags, CFTypeRef *msgOut, CFArrayRef *auxOut ) {
 char channel__call( channelT *chan, const char *method, tBASE *args,
     uint8_t flags, tBASE **msgOut, tARR **auxOut ) {
+  
+  int id = chan->nextMsgId++;//g_msg_id;
   #ifdef DEBUG
-  printf("Channel call:\n  channel=%d\n  method=%s\n  args=", chan->channel, method);
+  printf("Channel call:\n  channel=%d\n  method=%s\n  id=%d\n  args=", chan->channel, method, id);
   if( args ) tBASE__dump( args, 2 );
   else printf("nil\n");
   #endif
   
-  int id = chan->nextMsgId++;//g_msg_id;
   channel__send_withid( chan, method, args, flags | SEND_HASREPLY, id );
     
   int idout = 0;

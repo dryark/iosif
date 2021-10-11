@@ -81,12 +81,15 @@ int main (int argc, char **argv) {
   uclop__addcmd( opts, "dl",           "Download file",               &run_getfile,      udid_option );
   uclop__addcmd( opts, "launch",       "Launch app",                  &run_launch,       udid_option );
   uclop__addcmd( opts, "kill",         "Kill process",                &run_kill,         udid_option );
+  uclop__addcmd( opts, "tail",         "Tail process",                &run_tail,         udid_option );
   uclop__addcmd( opts, "sysinfo",      "System information",          &run_sysinfo,      udid_option );
-  uclop__addcmd( opts, "wda",          "WDA",                         &run_wda,          udid_option );
+  uclop__addcmd( opts, "wda",          "Run WebDriverAgent",          &run_wda,          udid_option );
+  uclop__addcmd( opts, "cfa",          "Run ControlFloorAgent",       &run_cfa,          udid_option );
   uclop__addcmd( opts, "dd",           "Dtx Dump Parser",             &run_dtxdump,      0);
   uclop__addcmd( opts, "ddf",          "Dump Dtx Folders",            &run_dtxdumpfolder, 0);
-  uclop__addcmd( opts, "xtest",        "Xcui test",                   &run_xtest, 0 );
+  uclop__addcmd( opts, "xctest",       "Xcui test",                   &run_xctest, 0 );
   uclop__addcmd( opts, "iserver",      "Image Server",                &run_iserver,      opts_iserver );
+  uclop__addcmd( opts, "iosversion",   "Get iOS version",             &run_ios_version,  udid_option );
   
   ucmd *mg = uclop__addcmd( opts, "mg", "Mobile Gestalt", &run_mg, udid_w_json_option );
   mg->extrahelp = "[key] [[key]...]";

@@ -84,6 +84,8 @@ void tBASE__toaux( tBASE *self, bytearr *out );
 bytearr *tBASE__asaux( tBASE *self );
 void tI32__toaux( tI32 *self, bytearr *out );
 void tI16__toaux( tI16 *self, bytearr *out );
+void tI8__toaux( tI8 *self, bytearr *out );
+void tDATA__toaux( tDATA *self, bytearr *out );
 void tBASE__archiveToAux( tBASE *self, bytearr *out );
 uint8_t *tBASE__archive( tBASE *self, uint32_t *len );
 

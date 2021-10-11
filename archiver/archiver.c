@@ -87,9 +87,11 @@ tUUID *tUUID__new( char *str ) {
     uint8_t num1;
     if( let >= '0' && let <= '9' ) num1 = let - '0';
     if( let >= 'a' && let <= 'f' ) num1 = let - 'a' + 10;
+    if( let >= 'A' && let <= 'F' ) num1 = let - 'A' + 10;
     uint8_t num2;
     if( let2 >= '0' && let2 <= '9' ) num2 = let2 - '0';
     if( let2 >= 'a' && let2 <= 'f' ) num2 = let2 - 'a' + 10;
+    if( let2 >= 'A' && let2 <= 'F' ) num2 = let2 - 'A' + 10;
     self->val[j] = num1 * 16 + num2;
     if( j == 15 ) break;
     j++;
@@ -272,6 +274,11 @@ uint32_t tSTR__toobs( tSTR *self, tOBS *obs ) {
 }
 
 uint32_t tNULL__toobs( tNULL *self, tOBS *obs ) {
+  uint32_t selfId = tOBS__rawadd( obs, tREF__new( (tBASE *) self ) );
+  return selfId;
+}
+
+uint32_t tDATA__toobs( tDATA *self, tOBS *obs ) {
   uint32_t selfId = tOBS__rawadd( obs, tREF__new( (tBASE *) self ) );
   return selfId;
 }
@@ -1016,6 +1023,7 @@ tSTR *tSTR__dup( tSTR *self ) {
 }
 
 tDATA *tDATA__dup( tDATA *self ) {
+  if( !self->len ) return tDATA__new( NULL, 0 );
   void *copy = malloc( self->len );
   memcpy( copy, self->val, self->len );
   return tDATA__new( copy, self->len );
@@ -1164,20 +1172,27 @@ void tBASE__archiveToAux( tBASE *self, bytearr *out ) {
 
 void tBASE__toaux( tBASE *self, bytearr *out ) {
   switch( self->type ) {
+    case xfI8:
     case xfSTR:
     case xfARR:
     case xfDICT:
     case xfCAPS:
     case xfTESTCONF:
     case xfURL:
+    case xfI16:
     case xfI64:
     case xfNULL:
     case xfUUID:
       tBASE__archiveToAux( self, out );
       break;
-    case xfI16:
-      tI16__toaux( (tI16 *) self, out );
-      break;
+    case xfDATA:
+      tDATA__toaux( (tDATA*) self, out );
+    //case xfI8:
+    //  tI8__toaux( (tI8 *) self, out );
+    //  break;
+    //case xfI16:
+    //  tI16__toaux( (tI16 *) self, out );
+    //  break;
     case xfI32:
       tI32__toaux( (tI32 *) self, out );
       break;
@@ -1197,6 +1212,7 @@ bytearr *tBASE__asaux( tBASE *self ) {
     case xfTESTCONF:
     case xfURL:
     case xfNULL:
+    case xfDATA:
     case xfSTR: {
       bytearr *out = bytearr__new();
       tBASE__archiveToAux( self, out );
@@ -1216,4 +1232,17 @@ void tI16__toaux( tI16 *self, bytearr *out ) {
   bytearr__appendi32( out, 10 ); // empty dict
   bytearr__appendi32( out, 3 ); // i32
   bytearr__appendi32( out, self->val );
+}
+
+void tI8__toaux( tI8 *self, bytearr *out ) {
+  bytearr__appendi32( out, 10 ); // empty dict
+  bytearr__appendi32( out, 3 ); // i32
+  bytearr__appendi32( out, self->val );
+}
+
+void tDATA__toaux( tDATA *self, bytearr *out ) {
+  bytearr__appendi32( out, 10 ); // empty dict
+  bytearr__appendi32( out, 2 ); // data
+  bytearr__appendi32( out, self->len );
+  if( self->len ) bytearr__appdup( out, self->val, self->len );
 }

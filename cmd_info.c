@@ -4,10 +4,13 @@
 #include"cfutil.h"
 #include"uclop.h"
 #include"service.h"
+#include"cmd_info.h"
 
 static ucmd *g_cmd = NULL;
 void runInfo( void *device );
 void run_info( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runInfo ); }
+void runIosVersion( void *device );
+void run_ios_version( ucmd *cmd ) { g_cmd = cmd; waitForConnect( runIosVersion ); }
 
 void runInfo( void *device ) {
   CFStringRef udidCf = AMDeviceCopyDeviceIdentifier( device );
@@ -53,6 +56,52 @@ void runInfo( void *device ) {
   if( useJson ) printf("}\n");
   
   devDown( device );
+  
+  exit(0);
+}
+
+iosVersion getIosVersion( void *device ) {
+  iosVersion version = {0,0,0};
+  
+  devUp( device );
+  CFTypeRef val = AMDeviceCopyValue( device, NULL, str_c2cf( "ProductVersion" ) );
+  devDown( device );
+  
+  //cfdump( 1, val );
+  char *vStr = str_cf2c( val );
+  
+  //printf("Raw ios version:%s\n", vStr );
+  int dots[3] = {0,0,0};
+  int dotI = 0;
+  for( int i=0;i<strlen(vStr);i++ ) {
+    if( vStr[i] == '.' ) {
+      dots[dotI++] = i;
+    }
+  }
+  if( !dots[0] ) {
+    version.major = atoi( vStr );
+    return version;
+  }
+  char majorStr[5];
+  sprintf( majorStr, "%.*s", dots[0], vStr );
+  version.major = atoi( majorStr );
+  
+  if( !dots[1] ) {
+    version.medium = atoi( &vStr[dots[0]+1] );
+    return version;
+  }
+  char mediumStr[5];
+  sprintf( mediumStr, "%.*s", dots[1]-dots[0], &vStr[dots[0]+1] );
+  version.medium = atoi( mediumStr );
+  version.minor = atoi( &vStr[dots[1]+1] );
+  
+  return version;
+}
+
+void runIosVersion( void *device ) {
+  if( !desired_device( device, g_cmd ) ) return;
+  iosVersion version = getIosVersion( device );
+  printf("Major %d\nMedium %d\nMinor %d\n", version.major, version.medium, version.minor );
   
   exit(0);
 }
